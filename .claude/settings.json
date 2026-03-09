@@ -1,0 +1,130 @@
+{
+  "model": "sonnet",
+  "permissions": {
+    "allow": [
+      "Bun(npm run *)",
+      "Bun(bun test *)",
+      "Bun(bun run *)",
+      "Bun(bun install *)",
+      "Bash(git:*)",
+      "Bash(make:*)",
+      "Bash(just:*)",
+      "Bash(ls:*)",
+      "Bash(cd:*)",
+      "Bash(mkdir:*)",
+      "Bash(echo:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(jq:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(awk:*)",
+      "Bash(sed:*)",
+      "Bash(tr:*)",
+      "Bash(cut:*)",
+      "Bash(xargs:*)",
+      "Bash(which:*)",
+      "Bash(command -v:*)",
+      "Bash(docker:*)",
+      "Bash(kubectl:*)",
+      "Bash(helm:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(date:*)",
+      "Bash(uname:*)",
+      "Bash(test:*)",
+      "Bash([:*)",
+      "Bash(env:*)",
+      "Bash(printenv:*)",
+      "Bash(clang:*)",
+      "Bash(gcc:*)",
+      "Bash(cc:*)",
+      "Bash(nproc:*)",
+      "Bash(getconf:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(wget:*)",
+      "Bash(tar:*)",
+      "Bash(gzip:*)",
+      "Bash(cargo:*)",
+      "Bash(rustc:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~/*)",
+      "Bash(rm -rf .*)",
+      "Bash(> /dev/sda*)",
+      "Bash(dd:*)",
+      "Bash(chmod 777 *)",
+      "Bash(git push --force origin main)",
+      "Bash(git push --force origin master)",
+      "Bash(gh pr merge --merge main)",
+      "Bash(npm publish*)",
+      "Bash(bun publish*)",
+      "Bash(cargo publish*)",
+      "Bash(docker push*)",
+      "Bash(aws s3 rm*)",
+      "Bash(gcloud secrets versions destroy*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(git commit*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-commit-check.sh",
+            "timeout": 120000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(rm -rf *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/block-destructive.sh",
+            "timeout": 3000
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/load-session-context.sh",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/inject-quality-constraints.sh",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true
+}

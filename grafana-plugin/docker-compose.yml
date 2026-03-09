@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: aacyn-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS=aacyn-datasource
+      - GF_LOG_LEVEL=debug
+    volumes:
+      # Mount the built plugin into Grafana's plugin directory
+      - ./dist:/var/lib/grafana/plugins/aacyn-datasource
+      # Mount provisioning config
+      - ./provisioning:/etc/grafana/provisioning
+    extra_hosts:
+      # Allow Grafana container to reach the host's aacyn API
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

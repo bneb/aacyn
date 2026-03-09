@@ -1,0 +1,25 @@
+# ─── aacyn Declarative Filter & Rollup Configuration ─────────────────────────
+#
+# Rules are evaluated at ingestion time against every event.
+# Events matching a "drop" rule are silently discarded before
+# reaching the ring buffer. This reduces storage, archival,
+# and query costs.
+#
+# Columns:  duration | is_error | timestamp
+# Operators: lt | gt | eq | neq | lte | gte  (or: < > == != <= >=)
+# Actions:  drop | keep
+
+# Drop sub-millisecond noise (health checks, heartbeats)
+[[filters]]
+column = "duration"
+op = "lt"
+threshold = 1.0
+action = "drop"
+
+# Drop non-error events in production (errors-only mode)
+# Uncomment to enable:
+# [[filters]]
+# column = "is_error"
+# op = "eq"
+# threshold = 0
+# action = "drop"

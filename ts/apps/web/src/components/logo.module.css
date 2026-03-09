@@ -1,0 +1,70 @@
+/* ─── Geometric Dove Logo ────────────────────────────────────────────────────
+ * Blue-to-purple gradient dove with draw-on-load and float animations.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+.wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+    text-decoration: none;
+}
+
+/* Dove SVG */
+
+.dove {
+    width: 32px;
+    height: auto;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.15));
+    animation: float 6s ease-in-out infinite;
+}
+
+.dove__path {
+    fill: none;
+    stroke: url(#logo-gradient);
+    stroke-width: 20;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 4000;
+    stroke-dashoffset: 4000;
+    animation: draw 2.5s ease-in-out forwards;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+@keyframes draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Wordmark */
+
+.wordmark {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.06em;
+    color: var(--color-text-primary, #fff);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.version {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.6rem;
+    color: var(--color-text-muted, #444);
+    font-weight: 400;
+    letter-spacing: 0;
+}

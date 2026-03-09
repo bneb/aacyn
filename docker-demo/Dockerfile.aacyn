@@ -1,0 +1,101 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.aacyn — Multi-Stage Native ARM64 Build
+#
+# Stage 1 (forge): Compiles libaacyn.so (NEON SIMD) and aacyn_probes.bpf.o
+#                  natively on ARM64 inside the Docker VM.
+#
+# NOTE: Ubuntu 24.04 required for libbpf >= 1.0 (kernel 6.x BTF compat).
+#       Ubuntu 22.04's libbpf 0.5.0 cannot parse kernel 6.12 BTF format.
+#
+# Stage 2 (runtime): Lean container with Bun + compiled native binaries
+#                    + eBPF probes for zero-instrumentation auto-discovery.
+#
+# The entire build is self-contained — no external releases needed.
+# `docker compose up --build` compiles everything from source.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Stage 1: THE FORGE — Compile C + eBPF on ARM64
+# ═══════════════════════════════════════════════════════════════════════════════
+
+FROM ubuntu:24.04 AS forge
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    clang \
+    llvm \
+    libbpf-dev \
+    libelf-dev \
+    zlib1g-dev \
+    file \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Copy native source (includes our minimal vmlinux.h)
+COPY native/ ./native/
+
+# Compile libaacyn.so with NEON SIMD (ARM64) + libbpf support
+RUN cd native && make clean && make EBPF=1 all && \
+    echo "" && \
+    echo "╔══════════════════════════════════════════════════════╗" && \
+    echo "║  Forge complete — ARM64 native binaries built        ║" && \
+    echo "╚══════════════════════════════════════════════════════╝" && \
+    ls -la /build/build/
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Stage 2: THE RUNTIME — Lean sidecar with native binaries
+# ═══════════════════════════════════════════════════════════════════════════════
+
+FROM ubuntu:24.04 AS runtime
+
+LABEL maintainer="aacyn"
+LABEL description="aacyn eBPF observability engine — zero-instrumentation sidecar"
+
+# Runtime dependencies + Bun runtime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libbpf1 \
+    libelf1 \
+    zlib1g \
+    curl \
+    unzip \
+    iproute2 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
+
+WORKDIR /opt/aacyn
+
+# ── Pull compiled ARM64 binaries from the forge ──────────────────────────────
+COPY --from=forge /build/build/libaacyn.so       /opt/aacyn/lib/libaacyn.so
+COPY --from=forge /build/build/aacyn_probes.bpf.o /opt/aacyn/lib/aacyn_probes.bpf.o
+
+# ── Copy TypeScript API server code ─────────────────────────────────────────
+COPY ts/apps/api/ /opt/aacyn/server/
+COPY ts/packages/sdk/ /opt/aacyn/sdk/
+
+# ── Install server dependencies ─────────────────────────────────────────────
+RUN cd /opt/aacyn/server && \
+    sed -i 's|"@aacyn/sdk": "workspace:\*"|"@aacyn/sdk": "file:../sdk"|' package.json && \
+    bun install --production
+
+# ── Entrypoint wrapper ──────────────────────────────────────────────────────
+COPY docker-demo/aacyn-entrypoint.sh /usr/local/bin/aacyn-entrypoint.sh
+RUN chmod +x /usr/local/bin/aacyn-entrypoint.sh
+
+# ── Environment: tell the FFI bridge exactly where the native lib lives ─────
+ENV LIBAACYN_PATH=/opt/aacyn/lib/libaacyn.so
+ENV AACYN_BPF_OBJ=/opt/aacyn/lib/aacyn_probes.bpf.o
+
+# ── Ports ────────────────────────────────────────────────────────────────────
+EXPOSE 3001 4318
+
+# ── Health Check ─────────────────────────────────────────────────────────────
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 \
+    CMD curl -sf http://localhost:3001/health || exit 1
+
+ENTRYPOINT ["/usr/local/bin/aacyn-entrypoint.sh"]

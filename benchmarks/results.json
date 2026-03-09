@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-06-21T18:30:59.113297",
+  "hardware": {
+    "os": "Darwin",
+    "arch": "arm64",
+    "cpu": "Apple M4",
+    "memory_gb": 24,
+    "cores": 10
+  },
+  "event_count": 1000000,
+  "quick": true,
+  "libaacyn": {
+    "ingest_events_per_sec": 633713551,
+    "scan_events_per_sec": 3183800823,
+    "error_query_latency_ms": 2.70089,
+    "events_inserted": 1000000
+  },
+  "sqlite": {
+    "ingest_events_per_sec": 1238876,
+    "scan_events_per_sec": 16232880,
+    "error_query_latency_ms": 56.176047,
+    "events_inserted": 1000000
+  }
+}

@@ -1,0 +1,118 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.k8s — Multi-Stage Build for aacyn Agent & Aggregator
+#
+# Both images use the same codebase; the AACYN_MODE env var selects behavior:
+#   - node         → eBPF node agent (runs on every Kubernetes node)
+#   - aggregator   → central aggregation endpoint
+#   - standalone   → combined node + local aggregator (default)
+#
+# Build:
+#   docker build -t aacyn/aacyn-agent:0.9.0 -f Dockerfile.k8s .
+#   docker build -t aacyn/aacyn-aggregator:0.9.0 -f Dockerfile.k8s .
+#
+# Run:
+#   docker run -e AACYN_MODE=node       aacyn/aacyn-agent:0.9.0
+#   docker run -e AACYN_MODE=aggregator aacyn/aacyn-aggregator:0.9.0
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Stage 1: Builder — Compile libaacyn.so + eBPF Probes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build toolchain for C and eBPF compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    clang \
+    llvm \
+    libbpf-dev \
+    libelf-dev \
+    zlib1g-dev \
+    make \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Copy native source (libaacyn.c, Makefile, eBPF .c files, headers)
+COPY native/ ./native/
+
+# Compile libaacyn.so with eBPF support
+RUN cd native && make clean && make EBPF=1 all 2>&1
+
+# Verify the compiled artifacts
+RUN echo "" && \
+    echo "╔══════════════════════════════════════════════════════╗" && \
+    echo "║  Builder stage complete                              ║" && \
+    echo "╚══════════════════════════════════════════════════════╝" && \
+    ls -lh /build/build/
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Stage 2: Runtime — Minimal Alpine image (~50MB base)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+FROM debian:bookworm-slim AS runtime
+
+LABEL maintainer="aacyn <support@aacyn.com>"
+LABEL description="aacyn observability engine — zero-instrumentation eBPF agent & aggregator"
+
+# Install runtime dependencies (glibc-based, matches Ubuntu builder)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libbpf1 \
+    libelf1 \
+    zlib1g \
+    ca-certificates \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Bun JavaScript runtime (glibc build for Debian)
+RUN curl -fsSL https://bun.sh/install | env BUN_INSTALL=/usr/local bash -s "bun-v1.3.14" && \
+    ln -sf /usr/local/bin/bun /usr/local/bin/bunx
+ENV PATH="/usr/local/bin:${PATH}"
+
+WORKDIR /opt/aacyn
+
+# ── Copy native artifacts from builder stage ─────────────────────────────────
+COPY --from=builder /build/build/libaacyn.so          /opt/aacyn/lib/libaacyn.so
+COPY --from=builder /build/build/aacyn_probes.bpf.o   /opt/aacyn/lib/aacyn_probes.bpf.o
+
+# ── Copy TypeScript source code (monorepo workspace) ────────────────────────
+# Copies the full Bun workspace so workspace:* dependencies resolve correctly
+COPY ts/package.json ts/bun.lock ts/bunfig.toml ./ts/
+COPY ts/apps/ ./ts/apps/
+COPY ts/packages/ ./ts/packages/
+
+# Install all workspace dependencies (production only)
+RUN cd /opt/aacyn/ts && \
+    bun install --production --frozen-lockfile 2>&1
+
+# ── Copy entrypoint ──────────────────────────────────────────────────────────
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# ── Environment defaults ─────────────────────────────────────────────────────
+ENV LIBAACYN_PATH=/opt/aacyn/lib/libaacyn.so
+ENV AACYN_BPF_OBJ=/opt/aacyn/lib/aacyn_probes.bpf.o
+ENV NODE_ENV=production
+ENV AACYN_MODE=standalone
+
+# ── Drop to non-root user for aggregator mode ───────────────────────────────
+# eBPF node agents still need root (entrypoint handles mount + capabilities).
+# Aggregator-only deployments should override this to runAsNonRoot.
+RUN useradd --create-home --shell /bin/bash aacyn
+USER aacyn
+
+# ── Ports ────────────────────────────────────────────────────────────────────
+# 3001 — aacyn API / dashboard
+# 4318 — OTLP HTTP ingestion
+EXPOSE 3001 4318
+
+# ── Health check ─────────────────────────────────────────────────────────────
+HEALTHCHECK --interval=10s --timeout=3s --retries=3 \
+    CMD curl -sf http://localhost:3001/health || exit 1
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

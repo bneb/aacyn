@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+*.o
+*.so
+*.dylib
+
+# Logs
+*.log
+
+# TypeScript
+*.tsbuildinfo
+grafana-plugin/dist/
+grafana-plugin/node_modules/

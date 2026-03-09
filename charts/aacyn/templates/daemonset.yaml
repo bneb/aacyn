@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "aacyn.fullname" . }}-agent
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: aacyn-agent
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aacyn-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aacyn-agent
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      hostPID: true
+      serviceAccountName: {{ .Values.rbac.serviceAccountName }}
+      tolerations:
+        {{- toYaml .Values.daemonset.tolerations | nindent 8 }}
+      containers:
+        - name: aacyn-agent
+          image: "{{ .Values.daemonset.image.repository }}:{{ .Values.daemonset.image.tag }}"
+          imagePullPolicy: {{ .Values.daemonset.image.pullPolicy }}
+          securityContext:
+            privileged: true
+          env:
+            - name: AACYN_MODE
+              value: node
+            - name: NODE_ENV
+              value: {{ .Values.global.nodeEnv | default "development" | quote }}
+            - name: AACYN_AGGREGATOR_URL
+              value: "http://{{ include "aacyn.fullname" . }}-aggregator:3001"
+          volumeMounts:
+            - name: debugfs
+              mountPath: /sys/kernel/debug
+            - name: tracing
+              mountPath: /sys/kernel/tracing
+          resources:
+            {{- toYaml .Values.daemonset.resources | nindent 12 }}
+      volumes:
+        - name: debugfs
+          hostPath:
+            path: /sys/kernel/debug
+            type: Directory
+          readOnly: true
+        - name: tracing
+          hostPath:
+            path: /sys/kernel/tracing
+            type: Directory
+          readOnly: true

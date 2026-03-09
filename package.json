@@ -1,0 +1,6 @@
+{
+  "dependencies": {},
+  "devDependencies": {
+    "@webgpu/types": "^0.1.70"
+  }
+}

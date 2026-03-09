@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aacyn.fullname" . }}-aggregator
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: aacyn-aggregator
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.aggregator.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aacyn-aggregator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aacyn-aggregator
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: aggregator
+          image: "{{ .Values.aggregator.image.repository }}:{{ .Values.aggregator.image.tag }}"
+          imagePullPolicy: {{ .Values.aggregator.image.pullPolicy }}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 3001
+              name: http
+          env:
+            - name: AACYN_MODE
+              value: aggregator
+            - name: NODE_ENV
+              value: {{ .Values.global.nodeEnv | default "development" | quote }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.aggregator.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aacyn.fullname" . }}-aggregator
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.aggregator.service.type }}
+  ports:
+    - port: 3001
+      targetPort: 3001
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: aacyn-aggregator
+---
+{{- if .Values.aggregator.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "aacyn.fullname" . }}-aggregator
+spec:
+  ingressClassName: {{ .Values.aggregator.ingress.className }}
+  rules:
+    {{- range .Values.aggregator.ingress.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "aacyn.fullname" $ }}-aggregator
+                port:
+                  number: 3001
+    {{- end }}
+{{- end }}

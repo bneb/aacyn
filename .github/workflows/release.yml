@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-x86:
+    name: Build Linux x86_64
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y \
+            build-essential clang llvm \
+            libbpf-dev libelf-dev zlib1g-dev \
+            linux-headers-$(uname -r) || true
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.13"
+
+      - name: Install Node dependencies
+        run: cd ts/apps/api && bun install
+
+      - name: Build native library
+        run: make -C native TARGET_ONLY=1
+
+      - name: Run C tests
+        run: make -C native test
+
+      - name: Run TypeScript tests
+        run: cd ts/apps/api && bun test
+
+      - name: Build release tarball
+        run: |
+          chmod +x scripts/build-release.sh
+          scripts/build-release.sh ${{ github.ref_name }}
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: aacyn-linux-x86_64
+          path: build/aacyn-linux-x86_64.tar.gz
+
+  build-linux-arm64:
+    name: Build Linux ARM64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.2.13"
+
+      - name: Install Node dependencies
+        run: cd ts/apps/api && bun install
+
+      - name: Build native library
+        run: make -C native TARGET_ONLY=1
+
+      - name: Run C tests
+        run: make -C native test
+
+      - name: Run TypeScript tests
+        run: cd ts/apps/api && bun test
+
+      - name: Build release tarball
+        run: |
+          chmod +x scripts/build-release.sh
+          scripts/build-release.sh ${{ github.ref_name }}
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: aacyn-linux-arm64
+          path: build/aacyn-linux-arm64.tar.gz
+
+  release:
+    name: Publish to bneb/aacyn-releases
+    needs: [build-linux-x86, build-linux-arm64]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download x86_64 tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: aacyn-linux-x86_64
+          path: dist/
+
+      - name: Download ARM64 tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: aacyn-linux-arm64
+          path: dist/
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz > checksums.txt
+          cat checksums.txt
+
+      - name: Checkout public releases repo
+        uses: actions/checkout@v4
+        with:
+          repository: bneb/aacyn-releases
+          token: ${{ secrets.RELEASE_TOKEN }}
+          path: releases-repo
+
+      - name: Push release to public repo
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          cd releases-repo
+          git config user.name "aacyn-ci"
+          git config user.email "ci@aacyn.com"
+          git tag -f ${{ github.ref_name }} || true
+          git push origin ${{ github.ref_name }} --force || true
+
+          printf '## Install\n\n```bash\ncurl -sSL https://aacyn.com/install.sh | bash\n```\n\n**Linux x86_64** (AVX2+) · **Linux ARM64** (Graviton, Ampere)\n' > /tmp/notes.md
+
+          gh release delete ${{ github.ref_name }} --repo bneb/aacyn-releases --yes 2>/dev/null || true
+
+          gh release create ${{ github.ref_name }} \
+            --title "aacyn ${{ github.ref_name }}" \
+            --notes-file /tmp/notes.md \
+            --repo bneb/aacyn-releases \
+            ../dist/aacyn-linux-x86_64.tar.gz \
+            ../dist/aacyn-linux-arm64.tar.gz \
+            ../dist/checksums.txt
+

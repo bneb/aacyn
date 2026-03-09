@@ -1,0 +1,30 @@
+{
+    "type": "datasource",
+    "name": "aacyn",
+    "id": "aacyn-datasource",
+    "info": {
+        "description": "Query the aacyn bare-metal observability engine",
+        "author": {
+            "name": "aacyn",
+            "url": "https://aacyn.com"
+        },
+        "version": "1.0.0",
+        "logos": {
+            "small": "img/logo.svg",
+            "large": "img/logo.svg"
+        }
+    },
+    "backend": true,
+    "executable": "gpx_aacyn-datasource",
+    "alerting": true,
+    "metrics": true,
+    "annotations": false,
+    "queryOptions": {
+        "maxDataPoints": true,
+        "minInterval": true
+    },
+    "dependencies": {
+        "grafanaDependency": ">=10.0.0",
+        "plugins": []
+    }
+}

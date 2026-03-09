@@ -1,0 +1,74 @@
+# aacyn Helm Chart Values
+
+# ── Global settings ──────────────────────────────────────────────────────
+global:
+  nodeEnv: "development"  # Set to "production" for production deploys
+  mode: "full"     # "full" (node + local agg), "node", "aggregator"
+
+# ── DaemonSet: eBPF node agent (runs on every node) ─────────────────────
+daemonset:
+  enabled: true
+  image:
+    repository: aacyn/aacyn-agent
+    tag: "0.9.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # eBPF requires privileged access and host PID namespace
+  privileged: true
+  hostPID: true
+  tolerations:
+    - operator: Exists  # Run on all nodes including cordoned
+  # Kernel debugfs/tracing mounts required for eBPF
+  extraHostMounts:
+    - /sys/kernel/debug
+    - /sys/kernel/tracing
+  # Config passed to each node
+  config:
+    filterRules: ""  # Inline aacyn.toml content
+
+# ── Deployment: Central aggregator ───────────────────────────────────────
+aggregator:
+  enabled: true
+  replicas: 1
+  image:
+    repository: aacyn/aacyn-aggregator
+    tag: "0.9.0"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 3001
+  # Ingress for dashboard access
+  ingress:
+    enabled: false
+    className: ""
+    hosts:
+      - aacyn.example.com
+
+# ── Forwarding configuration (optional) ──────────────────────────────────
+forwarding:
+  datadog:
+    enabled: false
+    apiKey: ""
+    site: "datadoghq.com"
+  splunk:
+    enabled: false
+    hecUrl: ""
+    hecToken: ""
+
+# ── RBAC ─────────────────────────────────────────────────────────────────
+rbac:
+  create: true
+  serviceAccountName: aacyn-agent

@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "aacyn.fullname" . }}-test-ingest
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: aacyn-test
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  restartPolicy: Never
+  containers:
+    - name: test
+      image: curlimages/curl:latest
+      command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "=== aacyn Helm Test: Ingest → Query Pipeline ==="
+
+          AGGREGATOR_URL="http://{{ include "aacyn.fullname" . }}-aggregator.{{ .Release.Namespace }}.svc.cluster.local:3001"
+
+          echo "1. Health check..."
+          HEALTH=$(curl -sf "$AGGREGATOR_URL/health")
+          echo "   Health: $HEALTH"
+          echo "$HEALTH" | grep -q '"status"' || (echo "FAIL: health check returned unexpected response" && exit 1)
+
+          echo "2. Ingest test events..."
+          INGEST_RESULT=$(curl -sf -X POST "$AGGREGATOR_URL/ingest/batch" \
+            -H "Content-Type: application/json" \
+            -d '{"events":[{"traceId":"helm-test-001","service":"test-svc","durationMs":4.2,"isError":false,"timestamp":'"$(date +%s)000"'}]}')
+          echo "   Ingest: $INGEST_RESULT"
+          echo "$INGEST_RESULT" | grep -q '"accepted"' || (echo "FAIL: ingest did not accept events" && exit 1)
+
+          echo "3. Query trace..."
+          TRACE_RESULT=$(curl -sf "$AGGREGATOR_URL/query/trace/helm-test-001")
+          echo "   Trace: $TRACE_RESULT"
+
+          echo "4. Dashboard data..."
+          DASHBOARD_RESULT=$(curl -sf "$AGGREGATOR_URL/v1/dashboard/data")
+          echo "   Dashboard: $(echo "$DASHBOARD_RESULT" | head -c 200)..."
+          echo "$DASHBOARD_RESULT" | grep -q '"edges"' || (echo "FAIL: dashboard data missing edges" && exit 1)
+
+          echo "5. Alerts endpoint..."
+          ALERTS_RESULT=$(curl -sf "$AGGREGATOR_URL/v1/alerts")
+          echo "   Alerts: $ALERTS_RESULT"
+
+          echo "=== All checks passed ==="

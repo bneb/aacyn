@@ -1,0 +1,92 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# aacyn Docker Demo — Zero-Instrumentation Observability
+#
+# usage:
+#   docker compose up --build
+#
+# The demo starts automatically. The traffic generator simulates a
+# 5-service microservices cluster with realistic traffic patterns.
+# See traffic-gen.sh for details.
+# ─────────────────────────────────────────────────────────────────────────────
+
+networks:
+  demo:
+    driver: bridge
+
+services:
+  # ── THE VICTIMS (Zero Telemetry Configured) ──────────────────────────────
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    networks:
+      - demo
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    # Uninstrumented API: receives HTTP requests, queries Postgres,
+    # simulates 30ms of processing latency. Zero OTel. Zero SDKs.
+    # See docker-demo/server.js for the implementation.
+    depends_on:
+      - db
+    networks:
+      - demo
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+    networks:
+      - demo
+
+  # ── THE PREDATOR (aacyn eBPF Engine) ─────────────────────────────────────
+
+  aacyn-sidecar:
+    build:
+      context: ..
+      dockerfile: docker-demo/Dockerfile.aacyn
+    privileged: true
+    pid: "host"
+    ports:
+      - "3001:3001"
+      - "4318:4318"
+    volumes:
+      # Required: eBPF tracepoints + BTF live here
+      - /sys/kernel/debug:/sys/kernel/debug:rw
+      # Required: access to tracefs for kprobes/tracepoints
+      - /sys/kernel/tracing:/sys/kernel/tracing:rw
+    env_file:
+      - .env
+    environment:
+      AACYN_MODE: standalone
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3001/health"]
+      start_period: 30s
+      interval: 5s
+      timeout: 3s
+      retries: 6
+    depends_on:
+      - api
+    networks:
+      - demo
+
+  # ── TRAFFIC GENERATOR (autonomous load simulation) ───────────────────────
+
+  traffic-gen:
+    build:
+      context: .
+      dockerfile: Dockerfile.traffic-gen
+    # Automatically generates realistic microservice traffic for the demo.
+    # See traffic-gen.sh for the full traffic pattern specification.
+    depends_on:
+      aacyn-sidecar:
+        condition: service_healthy
+    networks:
+      - demo

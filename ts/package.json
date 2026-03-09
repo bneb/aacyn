@@ -1,0 +1,24 @@
+{
+  "name": "aacyn",
+  "license": "Apache-2.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "bun run --filter '*' build",
+    "lint": "eslint .",
+    "test": "bun run --filter '*' test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "dev": "bun run --filter '*' dev",
+    "test:mutation": "bunx stryker run"
+  },
+  "devDependencies": {
+    "@hughescr/stryker-bun-runner": "^1.2.2",
+    "@stryker-mutator/core": "^9.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
+    "eslint": "^10.5.0"
+  }
+}

@@ -1,0 +1,40 @@
+[Unit]
+Description=aacyn — Zero-instrumentation infrastructure monitoring
+Documentation=https://aacyn.com/docs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aacyn
+Group=aacyn
+ExecStart=/usr/local/bin/aacyn-appliance
+Restart=always
+RestartSec=10
+
+# Environment
+EnvironmentFile=/etc/aacyn/environment
+Environment=AACYN_MODE=standalone
+
+# eBPF requires elevated capabilities
+CapabilityBoundingSet=CAP_BPF CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE
+AmbientCapabilities=CAP_BPF CAP_SYS_ADMIN CAP_NET_ADMIN CAP_SYS_PTRACE
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/aacyn /run/aacyn
+ReadOnlyPaths=/sys/kernel/debug /sys/kernel/tracing
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=1G
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=aacyn
+
+[Install]
+WantedBy=multi-user.target

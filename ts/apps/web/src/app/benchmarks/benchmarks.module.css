@@ -1,0 +1,458 @@
+/* ─── Benchmarks Page ────────────────────────────────────────────────────────
+ * Public-facing benchmark results with full methodology disclosure.
+ * Design: dark, high-contrast, monospaced numbers, generous whitespace.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+.page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--space-2xl) var(--space-lg);
+    min-height: 100vh;
+}
+
+/* ── Hero ─────────────────────────────────────────────────────────────── */
+
+.hero {
+    text-align: center;
+    padding: var(--space-2xl) 0 var(--space-xl);
+}
+
+.hero__back {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xl);
+    transition: color 0.15s ease;
+}
+
+.hero__back:hover {
+    color: var(--color-accent);
+}
+
+.hero__title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.hero__number {
+    font-family: var(--font-mono);
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    background: linear-gradient(135deg, #22c55e 0%, var(--color-accent) 50%, #f0f0f5 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hero__unit {
+    font-family: var(--font-mono);
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: lowercase;
+}
+
+.hero__subtitle {
+    margin-top: var(--space-lg);
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+/* ── Stat Cards ──────────────────────────────────────────────────────── */
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md);
+    margin: var(--space-xl) 0 var(--space-2xl);
+}
+
+@media (max-width: 640px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.stat {
+    position: relative;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg) var(--space-md);
+    text-align: center;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat:hover {
+    border-color: var(--color-border-hover);
+    box-shadow: var(--shadow-md);
+}
+
+.stat__value {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: -0.02em;
+}
+
+.stat__label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.stat__footnote {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--color-text-muted);
+}
+
+/* ── Sections ────────────────────────────────────────────────────────── */
+
+.section {
+    margin-bottom: var(--space-2xl);
+}
+
+.section__title {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+    letter-spacing: -0.01em;
+}
+
+.section__desc {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin-bottom: var(--space-lg);
+    max-width: 640px;
+}
+
+/* ── Comparison Table ────────────────────────────────────────────────── */
+
+.tableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.table th {
+    text-align: left;
+    padding: var(--space-sm) var(--space-md);
+    color: var(--color-text-muted);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.table td {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.table tbody tr:hover {
+    background: var(--color-bg-hover);
+}
+
+.table__metric {
+    color: var(--color-text-secondary);
+}
+
+.table__dim {
+    color: var(--color-text-muted);
+}
+
+.table__highlight {
+    color: var(--color-ok);
+    font-weight: 600;
+}
+
+.table__gain {
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+.table__rowHighlight {
+    background: rgba(99, 102, 241, 0.06);
+}
+
+.table__link {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
+    text-decoration: none;
+}
+
+.table__link:hover {
+    color: var(--color-accent);
+}
+
+.caveat {
+    margin-top: var(--space-lg);
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.caveat strong {
+    color: var(--color-text-primary);
+}
+
+.caveat a {
+    color: var(--color-accent);
+    font-size: 0.8rem;
+}
+
+/* ── Latency Bars ────────────────────────────────────────────────────── */
+
+.latencyBars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.latencyRow {
+    display: grid;
+    grid-template-columns: 48px 1fr 72px;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.latencyRow__label {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    text-align: right;
+}
+
+.latencyRow__track {
+    height: 24px;
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.latencyRow__bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-ok) 100%);
+    border-radius: var(--radius-sm);
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    min-width: 4px;
+}
+
+.latencyRow__value {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+/* ── Hardware Grid ───────────────────────────────────────────────────── */
+
+.hardwareGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+}
+
+@media (max-width: 640px) {
+    .hardwareGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.hardwareItem {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.hardwareItem__label {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.hardwareItem__value {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+/* ── Methodology ─────────────────────────────────────────────────────── */
+
+.methodology {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-2xl);
+}
+
+.methodology__intro {
+    font-size: 0.95rem;
+    color: var(--color-text-secondary);
+    line-height: 1.7;
+    margin-bottom: var(--space-xl);
+    max-width: 640px;
+}
+
+.methodology__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
+}
+
+@media (max-width: 640px) {
+    .methodology__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.methodCard {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+}
+
+.methodCard__title {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.methodCard__text {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+.methodCard__text code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--color-bg-elevated);
+    padding: 2px 5px;
+    border-radius: 3px;
+    color: var(--color-accent);
+}
+
+.methodCard__list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.methodCard__list li {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    padding-left: var(--space-md);
+    position: relative;
+}
+
+.methodCard__list li::before {
+    content: "·";
+    position: absolute;
+    left: 4px;
+    color: var(--color-text-muted);
+}
+
+.methodCard__list li strong {
+    color: var(--color-text-primary);
+    font-weight: 500;
+}
+
+.methodCard__code {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-elevated);
+    border-radius: var(--radius-sm);
+    padding: var(--space-md);
+    overflow-x: auto;
+    margin: 0;
+    white-space: pre;
+}
+
+/* ── Footnotes ───────────────────────────────────────────────────────── */
+
+.footnotes {
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-xl);
+    padding-bottom: var(--space-2xl);
+}
+
+.footnotes__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.footnotes__inner p {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+}
+
+.footnotes__inner sup {
+    font-family: var(--font-mono);
+    color: var(--color-text-muted);
+    font-size: 0.65rem;
+    margin-right: 2px;
+}
+
+.footnotes__repro {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.footnotes__repro code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--color-bg-elevated);
+    padding: 2px 5px;
+    border-radius: 3px;
+    color: var(--color-accent);
+}

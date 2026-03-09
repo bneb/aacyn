@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.gitattributes
+.github
+
+# Node / Bun
+**/node_modules
+**/.bun
+**/bun.lockb
+
+# Build artifacts
+build/
+target/
+dist/
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Other large / unnecessary directories
+docker-demo/.env
+benchmarks/
+docs/
+salt/
+product/
+workers/
+internal-docs/
+grafana-plugin/
+
+# Next.js build output (very large)
+ts/apps/web/.next/
+ts/apps/web/out/

@@ -1,0 +1,14 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile.traffic-gen — Traffic Generator for aacyn Demo
+#
+# Minimal Alpine container that runs the traffic generation script.
+# Installs bash (for the script) and curl (for HTTP requests).
+# ─────────────────────────────────────────────────────────────────────────────
+FROM alpine:3.20
+
+RUN apk add --no-cache bash curl
+
+COPY traffic-gen.sh /traffic-gen.sh
+RUN chmod +x /traffic-gen.sh
+
+CMD ["bash", "/traffic-gen.sh"]

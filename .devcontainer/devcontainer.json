@@ -1,0 +1,31 @@
+{
+  "name": "aacyn dev",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.23"
+    }
+  },
+  "forwardPorts": [3000, 3001],
+  "portsAttributes": {
+    "3000": { "label": "Dashboard", "onAutoForward": "notify" },
+    "3001": { "label": "API", "onAutoForward": "notify" }
+  },
+  "remoteEnv": {
+    "AACYN_ENV": "development",
+    "AACYN_DEV": "1"
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y build-essential clang llvm libbpf-dev libelf-dev zlib1g-dev linux-headers-generic make file && curl -fsSL https://bun.sh/install | bash && export BUN_INSTALL=\"$HOME/.bun\" && export PATH=\"$BUN_INSTALL/bin:$PATH\" && cd ts && bun install && cd ../native && make",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools-extension-pack",
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
+      ]
+    }
+  }
+}

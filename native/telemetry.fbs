@@ -1,0 +1,28 @@
+// aacyn Telemetry — FlatBuffers Schema
+//
+// Zero-parsing binary wire format for high-throughput ingestion.
+// EventStruct is a FlatBuffers struct (stored inline, not offset-based),
+// enabling direct memcpy from the wire into the SoA columnar store.
+//
+// Compile: flatc --c telemetry.fbs (optional — we hand-roll the reader)
+//
+// Wire Layout (EventStruct, 16 bytes, 8-byte aligned):
+//   ┌──────────┬────────────┬─────────────┬─────────┐
+//   │ u64 (8B) │ f32 (4B)   │ u16 (2B)    │ pad 2B  │
+//   │timestamp │duration_ms │ status_code │         │
+//   └──────────┴────────────┴─────────────┴─────────┘
+
+namespace aacyn.schema;
+
+struct EventStruct {
+  timestamp:   uint64;
+  duration_ms: float32;
+  status_code: uint16;
+}
+
+table TelemetryBatch {
+  trace_id: string;
+  events:   [EventStruct];
+}
+
+root_type TelemetryBatch;

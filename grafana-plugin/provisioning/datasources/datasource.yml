@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: aacyn
+    type: aacyn-datasource
+    access: proxy
+    url: http://host.docker.internal:3001
+    isDefault: true
+    editable: true
+    jsonData:
+      url: http://host.docker.internal:3001
