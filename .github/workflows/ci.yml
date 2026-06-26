@@ -59,6 +59,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build native engine (needed for binary ingest tests)
         run: make -C native NATIVE=1
+        working-directory: .
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
