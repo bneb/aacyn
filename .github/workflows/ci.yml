@@ -57,11 +57,15 @@ jobs:
         working-directory: ts
     steps:
       - uses: actions/checkout@v4
+      - name: Build native engine (needed for binary ingest tests)
+        run: make -C native NATIVE=1
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - run: bun install --frozen-lockfile
       - run: bun test
+        env:
+          LIBAACYN_PATH: ${{ github.workspace }}/build/libaacyn.so
 
   # ═══════════════════════════════════════════════════════════════════════
   # Native C — Build + Test (Linux x86_64, AVX-512)
