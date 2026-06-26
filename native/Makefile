@@ -117,6 +117,7 @@ $(BUILD)/aacyn_probes.bpf.o: aacyn_probes.bpf.c | $(BUILD)
 		$(if $(filter aarch64,$(UNAME_M)),-D__TARGET_ARCH_arm64,-D__TARGET_ARCH_x86) \
 		-I/usr/include/$(shell uname -m)-linux-gnu \
 		-O2 -g \
+		-mllvm -bpf-stack-size=4096 \
 		-c $< -o $@
 	@echo "✓ BPF object compiled: $@"
 
@@ -126,6 +127,7 @@ $(BUILD)/aacyn_auto.bpf.o: aacyn_auto.bpf.c | $(BUILD)
 		$(if $(filter aarch64,$(UNAME_M)),-D__TARGET_ARCH_arm64,-D__TARGET_ARCH_x86) \
 		-I/usr/include/$(shell uname -m)-linux-gnu \
 		-O2 -g \
+		-mllvm -bpf-stack-size=4096 \
 		-c $< -o $@
 	@echo "✓ Auto-discovery BPF object compiled: $@"
 
