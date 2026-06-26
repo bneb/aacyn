@@ -37,7 +37,7 @@ Three-language observability pipeline: eBPF probes in the kernel push connection
 | `cd native && make test` | All C tests pass |
 | `cd native && make sanitize` | No memory errors (Linux recommended, macOS partial) |
 
-Additional automated gates enforced by `.claude/hooks/`: function length <= 32 lines, nesting depth <= 3 levels, zero empty catch blocks, no `as any` casts on the store interface, mutation test pass on changed code.
+Additional automated gates: function length <= 32 lines, nesting depth <= 3 levels, zero empty catch blocks, no `as any` casts on the store interface, mutation test pass on changed code.
 
 ## How to Add a New eBPF Hook Point
 

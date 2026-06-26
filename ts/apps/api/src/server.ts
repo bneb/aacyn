@@ -282,7 +282,8 @@ function printBanner() {
 printBanner();
 
 // ─── Alerting Engine Startup ─────────────────────────────────────────────────
-const { AlertEngine, DEFAULT_ALERT_RULES, StdoutAlertOutput, WebhookAlertOutput, SlackWebhookAlertOutput } = await import("./lib/alerting");
+const { AlertEngine, DEFAULT_ALERT_RULES, StdoutAlertOutput, WebhookAlertOutput } = await import("./lib/alerting");
+const { SlackWebhookAlertOutput } = await import("./lib/slack-alert-output");
 
 /** Compute golden signals (RPS, error rate, latency, throughput) from topology edges. */
 function computeGoldenSignals(edges: TopologyEdge[]): Array<{

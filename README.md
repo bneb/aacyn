@@ -6,22 +6,22 @@
 **Hubble tells you what talked to what. aacyn tells you if it's breaking.**
 
 <p align="center">
-  <a href="https://github.com/aacyn/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aacyn/aacyn/ci.yml?branch=main&label=CI&logo=github" alt="CI"></a>
-  <a href="https://github.com/aacyn/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aacyn/aacyn/ci.yml?branch=main&label=lint-ts&logo=typescript" alt="Lint TS"></a>
-  <a href="https://github.com/aacyn/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aacyn/aacyn/ci.yml?branch=main&label=test-ts&logo=typescript" alt="Test TS"></a>
-  <a href="https://github.com/aacyn/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aacyn/aacyn/ci.yml?branch=main&label=test-c&logo=c" alt="Test C"></a>
-  <a href="https://github.com/aacyn/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aacyn/aacyn/ci.yml?branch=main&label=sanitize&logo=shield" alt="Sanitize"></a>
-  <a href="https://github.com/aacyn/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/aacyn/aacyn/ci.yml?branch=main&label=fuzz&logo=bug" alt="Fuzz"></a>
+  <a href="https://github.com/bneb/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bneb/aacyn/ci.yml?branch=main&label=CI&logo=github" alt="CI"></a>
+  <a href="https://github.com/bneb/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bneb/aacyn/ci.yml?branch=main&label=lint-ts&logo=typescript" alt="Lint TS"></a>
+  <a href="https://github.com/bneb/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bneb/aacyn/ci.yml?branch=main&label=test-ts&logo=typescript" alt="Test TS"></a>
+  <a href="https://github.com/bneb/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bneb/aacyn/ci.yml?branch=main&label=test-c&logo=c" alt="Test C"></a>
+  <a href="https://github.com/bneb/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bneb/aacyn/ci.yml?branch=main&label=sanitize&logo=shield" alt="Sanitize"></a>
+  <a href="https://github.com/bneb/aacyn/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/bneb/aacyn/ci.yml?branch=main&label=fuzz&logo=bug" alt="Fuzz"></a>
   <br>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
-  <a href="https://github.com/aacyn/aacyn/releases"><img src="https://img.shields.io/github/v/release/aacyn/aacyn?logo=semver" alt="Release"></a>
+  <a href="https://github.com/bneb/aacyn/releases"><img src="https://img.shields.io/github/v/release/bneb/aacyn?logo=semver" alt="Release"></a>
 </p>
 
 ## Quickstart
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/aacyn/aacyn
+git clone https://github.com/bneb/aacyn
 cd aacyn
 
 # 2. Install in any Kubernetes cluster
@@ -115,6 +115,6 @@ Apache 2.0 — see [LICENSE](LICENSE) for details. Current release: v1.0.0-dev.
 
 ## Community
 
-- [GitHub Discussions](https://github.com/aacyn/aacyn/discussions) — questions, ideas, show and tell
+- [GitHub Discussions](https://github.com/bneb/aacyn/discussions) — questions, ideas, show and tell
 - [Discord](https://discord.gg/aacyn) — real-time chat
 - [Contributing](CONTRIBUTING.md) — how to build, test, and submit changes

@@ -7,7 +7,7 @@
  */
 
 import { describe, test, expect, beforeEach } from "bun:test";
-import { store, UnsupportedError, type IngestEvent } from "../src/lib/store";
+import { store, type IngestEvent } from "../src/lib/store";
 
 function makeEvent(overrides: Partial<IngestEvent> = {}): IngestEvent {
     return {
@@ -130,46 +130,44 @@ describe("EventStore fallback", () => {
         expect(store.getByTraceId("anything")).toBeUndefined();
     });
 
-    // ── Unsupported methods throw ──────────────────────────────────────────
+    // ── Native-engine-only methods return empty / zero gracefully ──────────
 
-    test("ingestBinary throws UnsupportedError", () => {
-        expect(() => store.ingestBinary(new ArrayBuffer(16))).toThrow(UnsupportedError);
+    test("ingestBinary returns 0 instead of throwing", () => {
+        expect(store.ingestBinary(new ArrayBuffer(16))).toBe(0);
     });
 
-    test("ingestBinary throws with descriptive message", () => {
-        expect(() => store.ingestBinary(new ArrayBuffer(16))).toThrow("ingestBinary");
+    test("scanDurationMax returns 0 instead of throwing", () => {
+        expect(store.scanDurationMax()).toBe(0);
     });
 
-    test("scanDurationMax throws UnsupportedError", () => {
-        expect(() => store.scanDurationMax()).toThrow(UnsupportedError);
+    test("scanErrorCount returns 0 instead of throwing", () => {
+        expect(store.scanErrorCount()).toBe(0);
     });
 
-    test("scanErrorCount throws UnsupportedError", () => {
-        expect(() => store.scanErrorCount()).toThrow(UnsupportedError);
+    test("setRules does not throw", () => {
+        expect(() => store.setRules(new Uint8Array(16), 1)).not.toThrow();
     });
 
-    test("setRules throws UnsupportedError", () => {
-        expect(() => store.setRules(new Uint8Array(16), 1)).toThrow(UnsupportedError);
+    test("eventsDropped returns 0 instead of throwing", () => {
+        expect(store.eventsDropped()).toBe(0);
     });
 
-    test("eventsDropped throws UnsupportedError", () => {
-        expect(() => store.eventsDropped()).toThrow(UnsupportedError);
+    test("extractRaw returns empty buffer instead of throwing", () => {
+        const result = store.extractRaw(0, 10);
+        expect(result.buffer).toBeInstanceOf(Buffer);
+        expect(result.extracted).toBe(0);
     });
 
-    test("extractRaw throws UnsupportedError", () => {
-        expect(() => store.extractRaw(0, 10)).toThrow(UnsupportedError);
+    test("ebpfAttach returns 0 instead of throwing", () => {
+        expect(store.ebpfAttach("/path/to/bpf.o")).toBe(0);
     });
 
-    test("ebpfAttach throws UnsupportedError", () => {
-        expect(() => store.ebpfAttach("/path/to/bpf.o")).toThrow(UnsupportedError);
+    test("ebpfPoll returns 0 instead of throwing", () => {
+        expect(store.ebpfPoll(100)).toBe(0);
     });
 
-    test("ebpfPoll throws UnsupportedError", () => {
-        expect(() => store.ebpfPoll(100)).toThrow(UnsupportedError);
-    });
-
-    test("ebpfDetach throws UnsupportedError", () => {
-        expect(() => store.ebpfDetach()).toThrow(UnsupportedError);
+    test("ebpfDetach does not throw", () => {
+        expect(() => store.ebpfDetach()).not.toThrow();
     });
 
     // ── Safe fallback methods return empty / zero ──────────────────────────

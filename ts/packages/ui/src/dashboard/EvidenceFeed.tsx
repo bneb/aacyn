@@ -37,7 +37,7 @@ function renderEventItem(edge: TopologyEdge, index: number) {
 			<span className="text-slate-600 ml-auto">
 				{edge.latency_us}µs{" "}
 				{edge.hit_count > 0 && (
-					<span className="text-slate-500">\u{d7}{edge.hit_count}</span>
+					<span className="text-slate-500">&times;{edge.hit_count}</span>
 				)}
 			</span>
 		</div>

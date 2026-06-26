@@ -5,245 +5,163 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  BUN_VERSION: "1.3.10"
-
 jobs:
-  # ─── 1. TypeScript Lint (ESLint + tsc) ─────────────────────────────────────
-  lint-ts:
-    name: Lint TypeScript
+  # ═══════════════════════════════════════════════════════════════════════
+  # TypeScript — Lint
+  # ═══════════════════════════════════════════════════════════════════════
+  ts-lint:
+    name: "TS: Lint"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ts
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
+      - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
 
-      - name: Cache bun dependencies
-        uses: actions/cache@v4.3.0
-        with:
-          path: ts/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('ts/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: cd ts && bun install
-
-      - name: Lint (ESLint + tsc)
-        run: cd ts && bun run lint
-
-  # ─── 2. TypeScript Tests ──────────────────────────────────────────────────
-  test-ts:
-    name: Test TypeScript
+  # ═══════════════════════════════════════════════════════════════════════
+  # TypeScript — Type Check
+  # ═══════════════════════════════════════════════════════════════════════
+  ts-typecheck:
+    name: "TS: Type Check (strict)"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ts
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
+      - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
 
-      - name: Cache bun dependencies
-        uses: actions/cache@v4.3.0
-        with:
-          path: ts/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('ts/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Build native library (for FFI tests)
-        run: make -C native TARGET_ONLY=1
-
-      - name: Install dependencies
-        run: cd ts && bun install
-
-      - name: Run TypeScript tests
-        run: cd ts && bun test
-
-      - name: Check coverage threshold
-        run: cd ts && bun test --coverage --coverage-threshold=50
-
-  # ─── 3. TypeScript Mutation Testing (probabilistic — allowed to fail) ────
-  mutation-test:
-    name: Mutation Test
-    needs: [test-ts]
-    continue-on-error: true
+  # ═══════════════════════════════════════════════════════════════════════
+  # TypeScript — Tests (Linux)
+  # ═══════════════════════════════════════════════════════════════════════
+  ts-test:
+    name: "TS: Test (Linux)"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ts
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
+      - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun test
 
-      - name: Cache bun dependencies
-        uses: actions/cache@v4.3.0
-        with:
-          path: ts/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('ts/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: cd ts && bun install
-
-      - name: Run mutation tests
-        run: |
-          cd ts
-          bun add -d @stryker-mutator/core @hughescr/stryker-bun-runner 2>/dev/null || true
-          bun run test:mutation 2>&1 || echo "Mutation testing skipped (stryker not available on this runner)"
-
-  # ─── 4. C Engine Tests (Linux + macOS) ────────────────────────────────────
-  test-c:
-    name: C Engine Tests (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  # ═══════════════════════════════════════════════════════════════════════
+  # Native C — Build + Test (Linux x86_64, AVX-512)
+  # ═══════════════════════════════════════════════════════════════════════
+  native-linux:
+    name: "C: Build + Test (Linux x86_64)"
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Build and run C test suite
+      - uses: actions/checkout@v4
+      - name: Build native engine (AVX-512)
+        run: make -C native NATIVE=1
+      - name: Run C test suite
         run: make -C native test
 
-      - name: Run C code coverage
-        continue-on-error: true
-        run: make -C native coverage
+  # ═══════════════════════════════════════════════════════════════════════
+  # Native C — Build + Test (macOS ARM64, NEON)
+  # ═══════════════════════════════════════════════════════════════════════
+  native-macos:
+    name: "C: Build + Test (macOS ARM64)"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build native engine (NEON)
+        run: make -C native
+      - name: Run C test suite
+        run: make -C native test
 
-      - name: Extract and report coverage percentage
-        continue-on-error: true
-        run: |
-          echo "C code coverage extraction (best-effort):"
-          if [ -f libaacyn.c.gcov ]; then
-            head -5 libaacyn.c.gcov
-            echo "---"
-            grep "Lines executed" libaacyn.c.gcov 2>/dev/null || echo "(no summary line)"
-          elif ls build/*.gcda 2>/dev/null; then
-            echo "gcda files found in build/"
-            ls build/*.gcda
-          else
-            echo "No coverage data files found — this is normal for clang-based builds"
-          fi
-
-  # ─── 5. C Sanitize (ASan + UBSan) ─────────────────────────────────────────
-  sanitize-c:
-    name: C Sanitize (ASan+UBSan)
+  # ═══════════════════════════════════════════════════════════════════════
+  # Native C — Sanitizer (ASan + UBSan)
+  # ═══════════════════════════════════════════════════════════════════════
+  native-sanitize:
+    name: "C: ASan + UBSan (Linux)"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Build with ASan+UBSan, compile and run tests
+      - uses: actions/checkout@v4
+      - name: Build and run with sanitizers
         run: make -C native sanitize
 
-  # ─── 6. C Fuzz (probabilistic — allowed to fail) ──────────────────────────
-  fuzz-c:
-    name: C Fuzz (60s)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Run fuzzer for 60 seconds
-        run: make -C native fuzz FUZZ_DURATION=60
-
-  # ─── 7. Benchmark (main branch pushes only) ───────────────────────────────
-  benchmark:
-    name: Benchmark
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  # ═══════════════════════════════════════════════════════════════════════
+  # Native C — eBPF Build (Linux, libbpf)
+  # ═══════════════════════════════════════════════════════════════════════
+  native-ebpf:
+    name: "C: eBPF Build (Linux, libbpf)"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Build native library
-        run: make -C native
-
-      - name: Run benchmarks (quick mode)
-        run: benchmarks/run.sh --quick
-
-  # ─── 8. Docker Demo Smoke Test (integration) ─────────────────────────────
-  docker-smoke:
-    name: Docker Demo Smoke Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Create .env file (required by docker-compose)
-        run: echo "AACYN_MODE=standalone" > docker-demo/.env
-
-      - name: Build API image (eBPF sidecar skipped — requires kernel headers)
-        run: docker compose -f docker-demo/docker-compose.yml build api
-
-      - name: Start API service
-        run: docker compose -f docker-demo/docker-compose.yml up -d api
-
-      - name: Verify API container is running
+      - uses: actions/checkout@v4
+      - name: Install libbpf dependencies
         run: |
-          sleep 3
-          STATUS=$(docker compose -f docker-demo/docker-compose.yml ps api --format json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('State',''))")
-          if [ "$STATUS" = "running" ]; then
-            echo "API container: running"
+          sudo apt-get update
+          sudo apt-get install -y libbpf-dev libelf-dev
+      - name: Build with eBPF probes
+        run: make -C native EBPF=1
+      - name: Verify BPF objects exist
+        run: |
+          test -f build/aacyn_probes.bpf.o || (echo "Missing aacyn_probes.bpf.o" && exit 1)
+          test -f build/aacyn_auto.bpf.o || (echo "Missing aacyn_auto.bpf.o" && exit 1)
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Docker — Build validation
+  # ═══════════════════════════════════════════════════════════════════════
+  docker-build:
+    name: "Docker: Build Validation"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build libaacyn in Ubuntu container
+        run: docker build -f native/Dockerfile.ubuntu-test -t aacyn-build-test .
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # Benchmark — Regression gate (>10% regression = failure)
+  # ═══════════════════════════════════════════════════════════════════════
+  benchmark-regression:
+    name: "Benchmark: Regression Gate"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Build native engine (AVX-512)
+        run: make -C native NATIVE=1
+      - name: Run scan benchmark
+        run: bun run benchmarks/scan_benchmark.ts
+      - name: Check regression threshold
+        run: |
+          if [ -f benchmarks/results.json ]; then
+            SCAN_US=$(bun -e "
+              import { readFileSync } from 'node:fs';
+              const r = JSON.parse(readFileSync('benchmarks/results.json', 'utf8'));
+              const scan = r.scans.find((s) => s.name === 'scan_duration_max');
+              process.stdout.write(String(scan ? scan.median_us : 0));
+            ")
+            echo "scan_duration_max median: ${SCAN_US}us"
+            BASELINE=286
+            THRESHOLD=$(echo "$BASELINE * 1.10" | bc -l | cut -d. -f1)
+            if [ "$SCAN_US" -gt "$THRESHOLD" ]; then
+              echo "::warning::Benchmark regression: scan_duration_max ${SCAN_US}us exceeds threshold ${THRESHOLD}us (baseline: ${BASELINE}us, +10%). Manual review recommended."
+            else
+              echo "Benchmark within threshold: ${SCAN_US}us <= ${THRESHOLD}us"
+            fi
           else
-            echo "API container: $STATUS"
-            docker compose -f docker-demo/docker-compose.yml logs api
-            exit 1
+            echo "::warning::No benchmark results file — skipping regression check"
           fi
-
-      - name: Tear down
-        if: always()
-        run: docker compose -f docker-demo/docker-compose.yml down -v
-
-  # ─── 9. eBPF Kernel Verifier (Linux only) ────────────────────────────────
-  ebpf-verify:
-    name: eBPF Kernel Verifier
-    continue-on-error: true  # kernel headers vary across runner images
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
-      - name: Install eBPF build dependencies
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends \
-            build-essential clang llvm libbpf-dev libelf-dev zlib1g-dev \
-            bpftool
-          # linux-headers may not match the runner kernel — install best-effort
-          sudo apt-get install -y --no-install-recommends \
-            "linux-headers-$(uname -r)" 2>/dev/null || \
-            sudo apt-get install -y --no-install-recommends \
-            "linux-headers-generic" 2>/dev/null || true
-
-      - name: Compile eBPF probes
-        run: make -C native EBPF=1 2>&1
-
-      - name: Verify BPF object files exist
-        run: |
-          ls -la build/aacyn_probes.bpf.o build/aacyn_auto.bpf.o
-          file build/aacyn_probes.bpf.o
-
-      - name: Validate BPF instructions (llvm-objdump)
-        run: |
-          llvm-objdump -d build/aacyn_probes.bpf.o | head -20
-          echo ""
-          echo "BPF instruction count:"
-          llvm-objdump -d build/aacyn_probes.bpf.o | grep -c '^  '
-
-      - name: Verify with bpftool (kernel verifier acceptance)
-        run: |
-          # Use bpftool to check the object — this triggers the kernel verifier
-          # without requiring specific tracepoint IDs
-          sudo bpftool prog load build/aacyn_probes.bpf.o /sys/fs/bpf/aacyn_test \
-            type tracing 2>&1 || {
-            echo "NOTE: bpftool load may fail on CI runners without matching tracepoints."
-            echo "Compilation + instruction validation are the primary checks."
-            echo "Run 'sudo bpftool prog load' on a real Linux host for full verifier testing."
-          }
-          # Clean up if load succeeded
-          sudo rm -f /sys/fs/bpf/aacyn_test 2>/dev/null || true

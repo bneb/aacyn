@@ -1,16 +1,17 @@
 import type { IStore, TopologyEdge, DiscoveredService } from "@aacyn/sdk";
 
-/** Error thrown when a method is not supported by the V8MapStore fallback. */
-export class UnsupportedError extends Error {
-    constructor(method: string) {
-        super(
-            `"${method}" is not available in the V8 Map fallback store. ` +
-            `This feature requires the native libaacyn engine. ` +
-            `Fix: build the native engine with "cd native && make && sudo make install" ` +
-            `or set LIBAACYN_PATH to point to your libaacyn.dylib/libaacyn.so.`
-        );
-        this.name = "UnsupportedError";
-    }
+// ── Native engine unavailable warning ────────────────────────────────────
+
+const _methodsWarned = new Set<string>();
+
+function warnNativeUnavailable(method: string): void {
+    if (_methodsWarned.has(method)) return;
+    _methodsWarned.add(method);
+    console.warn(
+        `[store] Native engine not available — "${method}" requires the native C engine. ` +
+        `Build it with "cd native && make" or set LIBAACYN_PATH. ` +
+        `All native-dependent methods return empty/zero results gracefully.`
+    );
 }
 
 export interface IngestEvent {
@@ -53,8 +54,9 @@ class EventStore implements IStore {
         return events.length;
     }
 
-    ingestBinary(buffer: ArrayBuffer): number {
-        throw new UnsupportedError("ingestBinary");
+    ingestBinary(_buffer: ArrayBuffer): number {
+        warnNativeUnavailable("ingestBinary");
+        return 0;
     }
 
     getByTraceId(traceId: string): IngestEvent | undefined {
@@ -100,19 +102,22 @@ class EventStore implements IStore {
     }
 
     scanDurationMax(): number {
-        throw new UnsupportedError("scanDurationMax");
+        warnNativeUnavailable("scanDurationMax");
+        return 0;
     }
 
     scanErrorCount(): number {
-        throw new UnsupportedError("scanErrorCount");
+        warnNativeUnavailable("scanErrorCount");
+        return 0;
     }
 
-    setRules(ruleBuffer: Uint8Array, count: number): void {
-        throw new UnsupportedError("setRules");
+    setRules(_ruleBuffer: Uint8Array, _count: number): void {
+        warnNativeUnavailable("setRules");
     }
 
     eventsDropped(): number {
-        throw new UnsupportedError("eventsDropped");
+        warnNativeUnavailable("eventsDropped");
+        return 0;
     }
 
     byteSize(): number {
@@ -128,20 +133,23 @@ class EventStore implements IStore {
         return this.index.size;
     }
 
-    extractRaw(fromHead: number, count: number): { buffer: Buffer; extracted: number } {
-        throw new UnsupportedError("extractRaw");
+    extractRaw(_fromHead: number, _count: number): { buffer: Buffer; extracted: number } {
+        warnNativeUnavailable("extractRaw");
+        return { buffer: Buffer.alloc(0), extracted: 0 };
     }
 
-    ebpfAttach(bpfObjPath: string): number {
-        throw new UnsupportedError("ebpfAttach");
+    ebpfAttach(_bpfObjPath: string): number {
+        warnNativeUnavailable("ebpfAttach");
+        return 0;
     }
 
-    ebpfPoll(timeoutMs?: number): number {
-        throw new UnsupportedError("ebpfPoll");
+    ebpfPoll(_timeoutMs?: number): number {
+        warnNativeUnavailable("ebpfPoll");
+        return 0;
     }
 
     ebpfDetach(): void {
-        throw new UnsupportedError("ebpfDetach");
+        warnNativeUnavailable("ebpfDetach");
     }
 
     ebpfDrainCount(): number {

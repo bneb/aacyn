@@ -1,4 +1,4 @@
-# aacyn — Claude Code Project Instructions
+# aacyn — Project Instructions
 
 ## Project Identity
 
@@ -16,15 +16,15 @@ Three languages, one data plane: C for the hot path (ingest, SIMD scans, eBPF co
 
 ## Quality Gates (Non-Negotiable)
 
-These apply to **every** change, enforced by hooks in `.claude/hooks/`:
+These apply to **every** change:
 
 | Gate | Threshold | Enforcement |
 |------|-----------|-------------|
 | Test coverage | ≥ 95% line coverage on changed files | Pre-commit hook + loop |
-| Function length | ≤ 32 lines | PostToolUse hook (instant) |
-| Nesting depth | ≤ 3 levels (indentation) | PostToolUse hook (instant) |
+| Function length | ≤ 32 lines | ESLint `max-lines-per-function` |
+| Nesting depth | ≤ 3 levels (indentation) | ESLint `max-depth` |
 | Mutant elimination | 0 surviving mutants on changed code | `/run-mutation-tests` skill |
-| Silent catch blocks | 0 empty `catch {}` blocks | PostToolUse hook |
+| Silent catch blocks | 0 empty `catch {}` blocks | ESLint `no-empty` |
 | `as any` casts | 0 on the store interface | ESLint + review |
 | TypeScript strict | `strict: true` in tsconfig | `tsc --noEmit` in pre-commit |
 | ESLint zero errors/warnings | 0 ESLint errors, 0 warnings | Pre-commit hook |
@@ -70,12 +70,6 @@ See `SPRINT_ROADMAP.md` for the full 12-sprint plan. When starting a sprint, use
 - **FFI boundary changes** must keep the TypeScript `native-store.ts` definitions in sync with `libaacyn.c` exports.
 - **Dashboard changes** go in `ts/packages/ui/src/` as React components, not inline in `routes/dashboard.ts`.
 
-## File-Scoped Rules
+## Domain-Specific Conventions
 
-Additional rules load automatically based on the files you touch:
-- `native/**/*.c`, `*.h` → `.claude/rules/c-engine.md`
-- `native/**/*.bpf.c` → `.claude/rules/ebpf.md`
-- `ts/**/*.ts`, `*.tsx` → `.claude/rules/typescript.md`
-- `**/*.test.*`, `**/*.spec.*` → `.claude/rules/testing.md`
-- `charts/**`, `Dockerfile*` → `.claude/rules/kubernetes.md`
-- `**/crypto.*`, `**/auth.*`, `**/webhooks.*` → `.claude/rules/security.md`
+Detailed standards per file type live in `docs/conventions/` — C engine, eBPF probes, TypeScript, testing, Kubernetes, and security. Tool-agnostic. Run `bash scripts/link-conventions.sh` to symlink into your editor's expected path.

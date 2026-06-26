@@ -8,7 +8,7 @@ const log = createLogger("store-init");
 async function createNativeStore(): Promise<IStore> {
     const { NativeStore: StoreClass } = await import("./native-store");
     const store = new StoreClass(16_000_000);
-    log.info("[🛡️ aacyn] Native FFI store active — V8 GC bypassed");
+    log.info("[aacyn] Native FFI store active — V8 GC bypassed");
     return store;
 }
 
@@ -19,21 +19,21 @@ async function tryAttachEbpf(store: IStore): Promise<void> {
         const projectRoot = dirname(dirname(dirname(dirname(__dirname))));
         const bpfObjPath = process.env.AACYN_BPF_OBJ || join(projectRoot, "build", "aacyn_probes.bpf.o");
         if (!existsSync(bpfObjPath)) {
-            log.info(`[🔬 eBPF] No BPF object found at "${bpfObjPath}". Run: make -C native EBPF=1`);
+            log.info(`[ebpf] No BPF object found at "${bpfObjPath}". Run: make -C native EBPF=1`);
             log.info(`          Or set AACYN_BPF_OBJ to point to your compiled aacyn_probes.bpf.o`);
             return;
         }
         const rc = store.ebpfAttach(bpfObjPath);
         if (rc !== 0) {
-            log.warn(`[🔬 eBPF] Attach failed (rc=${rc}) at "${bpfObjPath}". Requires root / CAP_BPF + CAP_SYS_ADMIN.`);
+            log.warn(`[ebpf] Attach failed (rc=${rc}) at "${bpfObjPath}". Requires root / CAP_BPF + CAP_SYS_ADMIN.`);
             log.warn(`          Run as root or grant capabilities: sudo setcap cap_bpf,cap_sys_admin+ep $(which bun)`);
             return;
         }
-        log.info(`[🔬 eBPF] Probes attached: ${bpfObjPath}`);
+        log.info(`[ebpf] Probes attached: ${bpfObjPath}`);
         const pollHandle = setInterval(() => store.ebpfPoll(0), 100);
         if (pollHandle.unref) pollHandle.unref();
     } catch (ebpfErr) {
-        log.warn(`[🔬 eBPF] Skipped: ${(ebpfErr as Error).message}`);
+        log.warn(`[ebpf] Skipped: ${(ebpfErr as Error).message}`);
     }
 }
 
@@ -64,7 +64,7 @@ async function tryStartArchiver(store: IStore): Promise<void> {
 
 async function createFallbackStore(e: unknown): Promise<IStore> {
     const libPath = process.env.LIBAACYN_PATH || "build/libaacyn.dylib (or libaacyn.so on Linux)";
-    log.warn("[⚠️ aacyn] libaacyn native engine not found or failed to load. Falling back to V8 Map store.");
+    log.warn("[aacyn] libaacyn native engine not found or failed to load. Falling back to V8 Map store.");
     log.warn("          Metrics only — eBPF and SIMD scanning disabled.");
     log.warn(`          Expected library at: ${libPath}`);
     log.warn(`          Build the native engine: cd native && make && sudo make install`);

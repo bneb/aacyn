@@ -1,25 +1,30 @@
 /**
- * aacyn Dashboard — Real-Time WebGPU Topology Map
+ * aacyn Dashboard Data API
  *
- * Serves a self-contained HTML page at GET /dashboard that renders
- * eBPF-discovered microservice topology using hardware-accelerated
- * WebGPU (with Canvas 2D fallback).
- *
- * Data flow:
- *   eBPF ring buffer → C topology tracker → FFI → /v1/topology
- *   → fetch(500ms) → physics simulation → WebGPU render @ 60fps
+ * GET /v1/dashboard/data returns topology edges, golden signals,
+ * and drop counters. When the store is empty, demo data is returned
+ * so the dashboard shows a live-looking graph immediately.
  */
 
 import { Elysia } from "elysia";
 import { withStore } from "../lib/store-init";
 import { withK8s } from "../lib/k8s-discovery";
+import { DEMO_DASHBOARD, isDashboardEmpty } from "../lib/demo-data";
 import type { IStore, TopologyEdge } from "@aacyn/sdk";
 import type { K8sDiscovery } from "../lib/k8s-discovery";
 import { createLogger } from "../lib/logger";
 
 const log = createLogger("routes:dashboard");
 
-// ─── Response Types ───────────────────────────────────────────────────────────
+/** Detect which SIMD path the C engine was compiled with. */
+function detectSimdPath(): "AVX-512" | "NEON" | "scalar" {
+    const arch = process.arch;
+    if (arch === "arm64") return "NEON";
+    if (arch === "x64") return "AVX-512";
+    return "scalar";
+}
+
+// Response Types ───────────────────────────────────────────────────────────
 
 interface EdgeDataItem {
     source: string;
@@ -70,9 +75,14 @@ export interface DashboardDataResponse {
     golden_signals: GoldenSignalItem[];
     uptime_seconds: number;
     source: string;
+    performance?: {
+        events_per_sec: number;
+        scan_latency_us: number;
+        simd: "AVX-512" | "NEON" | "scalar";
+    };
 }
 
-// ─── Helper Functions ─────────────────────────────────────────────────────────
+// Helper Functions ─────────────────────────────────────────────────────────
 
 /** Map TopologyEdge records to the flattened edge-data wire format. */
 function computeEdgeData(edges: TopologyEdge[]): EdgeDataItem[] {
@@ -172,40 +182,43 @@ function computeGoldenSignals(edges: TopologyEdge[]): GoldenSignalItem[] {
     return buildSignalsFromTargets(byTarget, uptime);
 }
 
+/** Compute live performance indicators from the engine. */
+function computePerformance(store: IStore, drainCount: number, uptimeSec: number) {
+    return {
+        events_per_sec: Math.round(drainCount / uptimeSec),
+        scan_latency_us: Math.round(store.scanDurationMax() * 1000),
+        simd: detectSimdPath(),
+    };
+}
+
 /** Assemble the full dashboard response from the store, enriched with pod data. */
 function buildDashboardResponse(store: IStore, k8sDiscovery?: K8sDiscovery): DashboardDataResponse {
-    const empty: DashboardDataResponse = {
-        edges: [],
-        total_ebpf_events: 0,
-        drops: { standard: 0, critical: 0 },
-        golden_signals: [],
-        uptime_seconds: 0,
-        source: "none",
-    };
-
     try {
         let edges = store.topologyEdges();
         if (k8sDiscovery?.initialized) {
             edges = k8sDiscovery.enrichEdges(edges);
         }
         const drainCount = store.ebpfDrainCount();
-        const drops = store.dropCounts();
-
-        return {
+        const uptimeSec = Math.max(1, process.uptime());
+        const response: DashboardDataResponse = {
             edges: computeEdgeData(edges),
             total_ebpf_events: drainCount,
-            drops,
+            drops: store.dropCounts(),
             golden_signals: computeGoldenSignals(edges),
-            uptime_seconds: Math.round(Math.max(1, process.uptime())),
+            uptime_seconds: Math.round(uptimeSec),
             source: "ebpf",
+            performance: computePerformance(store, drainCount, uptimeSec),
         };
+        // Fall back to demo data when the store is empty (cold start)
+        if (isDashboardEmpty(response)) return DEMO_DASHBOARD;
+        return response;
     } catch (err) {
-        log.warn(`[dashboard] Store unavailable, returning empty payload: ${(err as Error).message}`);
-        return empty;
+        log.warn(`[dashboard] Store unavailable, returning demo data: ${(err as Error).message}`);
+        return DEMO_DASHBOARD;
     }
 }
 
-// ─── Routes ────────────────────────────────────────────────────────────────────
+// Routes ────────────────────────────────────────────────────────────────────
 
 export const dashboardRoutes = new Elysia()
     .use(withK8s)

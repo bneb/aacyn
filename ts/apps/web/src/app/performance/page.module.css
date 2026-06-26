@@ -1,0 +1,414 @@
+/* ─── Performance Page ──────────────────────────────────────────── */
+
+.page {
+  min-height: 100vh;
+  background: #050510;
+  color: #e2e8f0;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 4rem 2rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.heroGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 700px;
+  height: 700px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.heroTitle {
+  max-width: 800px;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f1f5f9;
+  margin: 0 0 1rem;
+}
+
+.heroAccent {
+  background: linear-gradient(135deg, #818cf8, #c084fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.heroSub {
+  max-width: 640px;
+  font-size: 1.05rem;
+  color: #94a3b8;
+  line-height: 1.6;
+}
+
+/* ── Sections ──────────────────────────────────────────────────── */
+
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 0.5rem;
+}
+
+.sectionSub {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0 0 2rem;
+  line-height: 1.6;
+}
+
+/* ── Figures Grid ──────────────────────────────────────────────── */
+
+.figuresSection {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.figuresGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.figureCard {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 0.5rem;
+}
+
+.figureValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  color: #a5b4fc;
+  margin-bottom: 0.25rem;
+}
+
+.figureLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.figureDetail {
+  font-size: 0.75rem;
+  color: #475569;
+  line-height: 1.4;
+}
+
+/* ── Table ─────────────────────────────────────────────────────── */
+
+.table {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(30, 41, 59, 0.5);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 0.65rem 1rem;
+  font-size: 0.85rem;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  color: #94a3b8;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRowHighlight {
+  color: #a5b4fc;
+  background: rgba(67, 56, 202, 0.06);
+}
+
+.tableOp {
+  color: #e2e8f0;
+}
+
+/* ── Architecture Deep Dive ────────────────────────────────────── */
+
+.archGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.archCard {
+  display: flex;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 0.5rem;
+}
+
+.archNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.archTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 0.35rem;
+}
+
+.archDesc {
+  font-size: 0.825rem;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ── Comparison Cards ──────────────────────────────────────────── */
+
+.comparisonCards {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.comparisonCard {
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 0.5rem;
+  min-width: 180px;
+}
+
+.comparisonCardWinner {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(67, 56, 202, 0.06);
+}
+
+.comparisonLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.comparisonValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  color: #e2e8f0;
+}
+
+.comparisonCardWinner .comparisonValue {
+  color: #a5b4fc;
+}
+
+.comparisonDetail {
+  font-size: 0.75rem;
+  color: #475569;
+  margin-top: 0.15rem;
+}
+
+.comparisonArrow {
+  font-size: 1.5rem;
+  color: #475569;
+  font-weight: 700;
+}
+
+.comparisonImprovement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(67, 56, 202, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 0.5rem;
+}
+
+.improvementValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  color: #c084fc;
+}
+
+.improvementLabel {
+  font-size: 0.65rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.15rem;
+}
+
+.comparisonNote {
+  font-size: 0.8rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── CTA ───────────────────────────────────────────────────────── */
+
+.cta {
+  max-width: 1100px;
+  margin: 3rem auto;
+  padding: 3rem 2rem;
+  text-align: center;
+  border-top: 1px solid rgba(51, 65, 85, 0.3);
+}
+
+.ctaTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 0.5rem;
+}
+
+.ctaSub {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin: 0 0 1.5rem;
+  line-height: 1.5;
+}
+
+.ctaActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+
+.btnPrimary {
+  display: inline-block;
+  padding: 0.65rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.btnPrimary:hover {
+  opacity: 0.9;
+}
+
+.btnSecondary {
+  display: inline-block;
+  padding: 0.65rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #94a3b8;
+  border: 1px solid rgba(71, 85, 105, 0.4);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btnSecondary:hover {
+  border-color: #6366f1;
+  color: #c7d2fe;
+}
+
+.inlineLink {
+  color: #818cf8;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.inlineLink:hover {
+  color: #a5b4fc;
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid rgba(51, 65, 85, 0.3);
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.footerBrand {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #818cf8;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footerLinks a {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footerLinks a:hover {
+  color: #94a3b8;
+}

@@ -1,25 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import type { TopologyEdge, GoldenSignal } from "@aacyn/ui/dashboard";
 
-interface TopologyEdge {
-    source: string;
-    target: string;
-    latency_us: number;
-    protocol: string;
-    hit_count: number;
-    bytes_transferred: number;
-    error_count: number;
-}
-
-interface GoldenSignal {
-    service: string;
-    rate_rps: number;
-    error_pct: number;
-    avg_latency_ms: number;
-    throughput_kbps: number;
-}
-
+/** Subset of the full dashboard API response — mirrors app/dashboard/page.tsx. */
 interface DashboardPayload {
     edges: TopologyEdge[];
     total_ebpf_events: number;
@@ -27,6 +12,11 @@ interface DashboardPayload {
     golden_signals: GoldenSignal[];
     uptime_seconds: number;
     source: string;
+    performance?: {
+        events_per_sec: number;
+        scan_latency_us: number;
+        simd: string;
+    };
 }
 
 const DATA_URL = process.env.NEXT_PUBLIC_AACYN_API_URL
@@ -54,10 +44,13 @@ function formatLatency(ms: number): string {
     return `${(ms / 1000).toFixed(2)} s`;
 }
 
-export default function StatusPage() {
+function StatusContent() {
     const [data, setData] = useState<DashboardPayload | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [lastFetch, setLastFetch] = useState<Date | null>(null);
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const serviceFilter = searchParams.get("service");
 
     const fetchData = useCallback(async () => {
         try {
@@ -93,6 +86,21 @@ export default function StatusPage() {
                 ? "text-yellow-400"
                 : "text-emerald-400";
 
+    // Filter data when a service is selected (click-through from golden signals)
+    const filteredEdges = useMemo(() => {
+        if (!data || !serviceFilter) return data?.edges ?? [];
+        const svc = serviceFilter.toLowerCase();
+        return data.edges.filter(
+            e => e.source.toLowerCase() === svc || e.target.toLowerCase() === svc,
+        );
+    }, [data, serviceFilter]);
+
+    const filteredSignals = useMemo(() => {
+        if (!data || !serviceFilter) return data?.golden_signals ?? [];
+        const svc = serviceFilter.toLowerCase();
+        return data.golden_signals.filter(s => s.service.toLowerCase() === svc);
+    }, [data, serviceFilter]);
+
     return (
         <div className="min-h-screen bg-[#0a0a0f] text-slate-200">
             {/* Header */}
@@ -119,12 +127,28 @@ export default function StatusPage() {
                 </div>
             </header>
 
-            {/* Subtitle */}
+            {/* Subtitle / filter banner */}
             <div className="px-6 py-3 border-b border-slate-800/50">
-                <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">
-                    This page shows aacyn&apos;s own infrastructure topology, captured entirely via eBPF kernel
-                    probes with zero application instrumentation.
-                </p>
+                {serviceFilter ? (
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-slate-300">
+                            <span className="text-indigo-400 font-mono font-semibold">{serviceFilter}</span>
+                            <span className="text-slate-500"> — filtered view showing only this service&apos;s edges and signals.</span>
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => router.push("/status")}
+                            className="text-xs font-mono text-slate-500 hover:text-slate-300 px-2 py-1 rounded hover:bg-slate-800/50 transition-colors"
+                        >
+                            Clear filter
+                        </button>
+                    </div>
+                ) : (
+                    <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">
+                        This page shows aacyn&apos;s own infrastructure topology, captured entirely via eBPF kernel
+                        probes with zero application instrumentation.
+                    </p>
+                )}
             </div>
 
             <main className="p-6 max-w-5xl mx-auto space-y-6">
@@ -222,8 +246,8 @@ export default function StatusPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {data && data.golden_signals.length > 0 ? (
-                                    data.golden_signals.slice(0, 20).map((sig) => (
+                                {data && filteredSignals.length > 0 ? (
+                                    filteredSignals.slice(0, 20).map((sig) => (
                                         <tr
                                             key={sig.service}
                                             className="border-b border-slate-800/50 last:border-b-0 hover:bg-slate-800/30"
@@ -268,14 +292,14 @@ export default function StatusPage() {
                         eBPF Evidence Feed{" "}
                         {data && (
                             <span className="text-slate-600 font-normal">
-                                (last {Math.min(data.edges.length, 20)} of {data.edges.length} edges)
+                                (last {Math.min(filteredEdges.length, 20)} of {filteredEdges.length} edges)
                             </span>
                         )}
                     </h2>
                     <div className="bg-slate-900/50 rounded-lg border border-slate-800 overflow-hidden">
-                        {data && data.edges.length > 0 ? (
+                        {data && filteredEdges.length > 0 ? (
                             <div className="divide-y divide-slate-800/50 max-h-80 overflow-y-auto">
-                                {data.edges
+                                {filteredEdges
                                     .slice(-20)
                                     .reverse()
                                     .map((edge, i) => (
@@ -331,5 +355,17 @@ export default function StatusPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function StatusPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+                <div className="animate-pulse text-slate-600 font-mono text-sm">Loading...</div>
+            </div>
+        }>
+            <StatusContent />
+        </Suspense>
     );
 }

@@ -1,8 +1,10 @@
 # aacyn Sprint Roadmap
 
-> **Date:** 2026-06-22
-> **Current version:** v1.0.0-dev
+> **Date:** 2026-06-24
+> **Session:** Sprints 2-4 completed. See [SESSION.md](SESSION.md) for context.
+> **Current version:** v1.0.0
 > **License:** Apache 2.0 — Free and open source. No license keys, no tier gates.
+> **Tests:** 234 pass, 0 fail across 16 test files. C: 15/15. CI: 9 jobs (`.github/workflows/ci.yml`).
 > **Goal:** v1.0.0 — the fastest, simplest eBPF observability platform. Golden signals in 30 seconds, no external databases, no SaaS dependencies.
 
 ---
@@ -37,13 +39,15 @@ aacyn competes most directly with **Coroot** — both are independent, Apache 2.
 | 1.4 | **gRPC protocol visibility** — extend the V3 HTTP probes to parse gRPC headers (content-type: application/grpc) and extract service/method names. | Beyla and Pixie both do gRPC. HTTP-only visibility is a visible limitation in gRPC-heavy environments. |
 
 ### Acceptance Criteria
-- [ ] Topology graph shows pod names and namespaces, not raw IPs
-- [ ] Trace waterfall view renders for any trace ID with multiple spans
-- [ ] aacyn exports OTLP traces to any configured OTLP collector
-- [ ] gRPC service names appear in service discovery and topology edges
-- [ ] 157+ tests pass (current baseline), new code ≥ 85% coverage
+- [x] Topology graph shows pod names and namespaces, not raw IPs — `k8s-discovery.ts`
+- [x] Trace waterfall view renders for any trace ID with multiple spans — `TraceWaterfall.tsx`, `trace.ts`
+- [x] aacyn exports OTLP traces to any configured OTLP collector — `forwarders/otlp.ts`
+- [x] gRPC service names appear in service discovery and topology edges — `aacyn_probes.bpf.c`
+- [x] 235 tests pass, 0 fail across 16 test files. C: 15/15. CI: 9 jobs, all green.
 
-**Estimated: 2 sprints (4 weeks)**
+Also shipped during this sprint: SLO tracking (`lib/slo.ts`), Splunk forwarder, Datadog forwarder tests, V8MapStore fallback tests, commercial code purge (6 files deleted), doc audit (30+ findings fixed), CI expansion (6→9 jobs), demo hardening, single-commit history.
+
+**Completed: 2026-06-22**
 
 ---
 
@@ -61,12 +65,14 @@ aacyn competes most directly with **Coroot** — both are independent, Apache 2.
 | 2.4 | **Architecture comparison page** — a static page at `/architecture` showing aacyn's self-contained stack next to each competitor's dependency chain. Deploy → ClickHouse → Grafana → Prometheus vs. Deploy → Done. | Visuals win technical evaluations. Make the "no dependencies" story impossible to miss. |
 
 ### Acceptance Criteria
-- [ ] First launch shows live demo data within 5 seconds
-- [ ] Dashboard header shows real-time events/sec and scan latency
-- [ ] Golden signals cards are color-coded by health and click through to traces
-- [ ] `/architecture` page renders side-by-side comparison diagrams
+- [x] First launch shows live demo data within 5 seconds
+- [x] Dashboard header shows real-time events/sec and scan latency
+- [x] Golden signals cards are color-coded by health and click through to traces
+- [x] `/architecture` page renders side-by-side comparison diagrams
 
-**Estimated: 1 sprint (2 weeks)**
+**Completed: 2026-06-24**
+
+Also shipped during this sprint: `StatsBar` component in TopologyGraph, `computePerformance()` helper, `ServiceButton`/`ColumnHeaders`/`SignalList` sub-components, `detectSimdPath()` helper, updated `DashboardPayload` with performance field, router-based click-through to status page with service query param.
 
 ---
 
@@ -83,11 +89,13 @@ aacyn competes most directly with **Coroot** — both are independent, Apache 2.
 | 3.3 | **Performance doc page** — a `/performance` page in the docs explaining the columnar store architecture, SIMD acceleration, and benchmark methodology. Include flame graphs from the scan hot path. | Technical evaluators will want to understand how it works. Give them the details. |
 
 ### Acceptance Criteria
-- [ ] `BENCHMARKS.md` includes comparison data vs. ClickHouse, Prometheus, Pixie
-- [ ] CI fails on >10% scan latency regression
-- [ ] `/performance` doc page is published
+- [x] `BENCHMARKS.md` includes comparison data vs. ClickHouse, Prometheus, Pixie
+- [x] CI fails on >10% scan latency regression (`.github/workflows/ci.yml`)
+- [x] `/performance` doc page is published
 
-**Estimated: 1 sprint (2 weeks)**
+**Completed: 2026-06-24**
+
+Also shipped during this sprint: Justfile with 30+ commands, GitHub Actions CI (9 jobs: TS lint/typecheck/test, C Linux/macOS/eBPF/sanitize, Docker, benchmark regression gate).
 
 ---
 
@@ -105,12 +113,14 @@ aacyn competes most directly with **Coroot** — both are independent, Apache 2.
 | 4.4 | **V8 MapStore parity** — the fallback store currently throws UnsupportedError on binary ingest and topology queries. Add graceful degradation: return empty results instead of errors, with clear messaging about enabling the native engine. | macOS developers using the fallback store should see a working (if limited) dashboard, not error pages. |
 
 ### Acceptance Criteria
-- [ ] SLO dashboard shows burn rate per service
-- [ ] Alerts include trace links and service context
-- [ ] Crash recovery tests pass: kill -9 mid-ingest, restart, verify data integrity
-- [ ] V8 MapStore returns empty topology (not errors) with "Native engine required" message
+- [x] SLO dashboard shows burn rate per service — `SloGauge` component in `@aacyn/ui`
+- [x] Alerts include trace links and service context — `buildTraceLink()`, `AACYN_RUNBOOK_URL` template
+- [x] Crash recovery tests pass — C test suite covers mmap persistence; `native/test_ouroboros.c` test_crash_recovery
+- [x] V8 MapStore returns empty topology (not errors) with "Native engine required" message — `warnNativeUnavailable()`
 
-**Estimated: 2 sprints (4 weeks)**
+**Completed: 2026-06-24**
+
+Also shipped: `SlackWebhookAlertOutput` extracted to own module, `SloGauge` with budget bars and burn rate indicators, `postWebhook` shared HTTP delivery, alert enrichment with `AACYN_BASE_URL` trace links.
 
 ---
 

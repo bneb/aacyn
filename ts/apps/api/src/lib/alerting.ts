@@ -22,10 +22,6 @@ import { metrics } from "./metrics";
 import { createLogger } from "./logger";
 const log = createLogger("lib-alerting");
 
-
-
-// --- Types ------------------------------------------------------------------
-
 export interface AlertRule {
     /** Unique rule identifier */
     name: string;
@@ -79,9 +75,16 @@ export interface AlertEngineConfig {
     outputs: AlertOutput[];
 }
 
+function buildTraceLink(service?: string): string {
+    const base = process.env.AACYN_BASE_URL || "http://localhost:3001";
+    return service ? `${base}/status?service=${encodeURIComponent(service)}` : `${base}/status`;
+}
 
-
-// --- Built-in Outputs -------------------------------------------------------
+function buildRunbookUrl(ruleName: string): string | null {
+    const template = process.env.AACYN_RUNBOOK_URL;
+    if (!template) return null;
+    return template.replace(/\{rule\}/g, encodeURIComponent(ruleName));
+}
 
 /** Writes one-line formatted alerts to stdout. Always enabled. */
 export class StdoutAlertOutput implements AlertOutput {
@@ -93,6 +96,7 @@ export class StdoutAlertOutput implements AlertOutput {
             rule.metric && `metric=${alert.currentValue}`,
             rule.operator && rule.threshold !== undefined && `threshold=${rule.operator} ${rule.threshold}`,
             alert.service && `service=${alert.service}`,
+            alert.service && `trace=${buildTraceLink(alert.service)}`,
             `at ${new Date().toISOString()}`,
         ].filter(Boolean).join(" ");
         process.stdout.write(parts + "\n");
@@ -100,7 +104,8 @@ export class StdoutAlertOutput implements AlertOutput {
 
     async resolve(alert: AlertState, rule: AlertRule): Promise<void> {
         const svc = alert.service ? ` service=${alert.service}` : "";
-        process.stdout.write(`[RESOLVED] ${rule.name}${svc} at ${new Date().toISOString()}\n`);
+        const link = ` trace=${buildTraceLink(alert.service)}`;
+        process.stdout.write(`[RESOLVED] ${rule.name}${svc}${link} at ${new Date().toISOString()}\n`);
     }
 }
 
@@ -116,22 +121,33 @@ export class WebhookAlertOutput implements AlertOutput {
     async fire(alert: AlertState, rule: AlertRule): Promise<void> {
         const color = rule.severity === "critical" ? "#dc2626" :
                       rule.severity === "warning"  ? "#f59e0b" : "#3b82f6";
+        const traceLink = buildTraceLink(alert.service);
+        const runbook = buildRunbookUrl(rule.name);
 
-        const payload = {
+        const fields = [
+            { title: "Service", value: alert.service || "global", short: true },
+            { title: "Metric", value: `${rule.metric} = ${alert.currentValue} (threshold: ${rule.operator} ${rule.threshold})`, short: true },
+            { title: "Trace link", value: traceLink, short: false },
+        ];
+        if (runbook) fields.push({ title: "Runbook", value: runbook, short: false });
+        fields.push({
+            title: "Firing since",
+            value: alert.firingSince ? new Date(alert.firingSince).toISOString() : "just now",
+            short: false,
+        });
+
+        await this.postWebhook({
             attachments: [{
-                color,
+                color, fields,
                 title: `\u{1F6A8} ${rule.severity.toUpperCase()}: ${rule.name}`,
                 text: rule.description,
-                fields: [
-                    { title: "Service", value: alert.service || "global", short: true },
-                    { title: "Metric", value: `${rule.metric} = ${alert.currentValue} (threshold: ${rule.operator} ${rule.threshold})`, short: true },
-                    { title: "Firing since", value: alert.firingSince ? new Date(alert.firingSince).toISOString() : "just now", short: false },
-                ],
                 footer: "aacyn alerting",
                 ts: Math.floor(Date.now() / 1000),
             }],
-        };
+        });
+    }
 
+    private async postWebhook(payload: unknown): Promise<void> {
         try {
             const res = await fetch(this.url, {
                 method: "POST",
@@ -148,91 +164,23 @@ export class WebhookAlertOutput implements AlertOutput {
     }
 
     async resolve(alert: AlertState, rule: AlertRule): Promise<void> {
-        const payload = {
+        await this.postWebhook({
             attachments: [{
                 color: "#22c55e",
-                title: `✅ RESOLVED: ${rule.name}`,
+                title: `RESOLVED: ${rule.name}`,
                 text: rule.description,
                 fields: [
                     { title: "Service", value: alert.service || "global", short: true },
                     { title: "Current value", value: `${rule.metric} = ${alert.currentValue}`, short: true },
+                    { title: "Trace link", value: buildTraceLink(alert.service), short: false },
                     { title: "Resolved at", value: new Date().toISOString(), short: false },
                 ],
                 footer: "aacyn alerting",
                 ts: Math.floor(Date.now() / 1000),
             }],
-        };
-
-        try {
-            await fetch(this.url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(5_000),
-            });
-        } catch (err) {
-            log.error(`[Alerting] Webhook delivery failed: ${err instanceof Error ? err.message : String(err)}`);
-        }
+        });
     }
 }
-
-/** Sends Slack-formatted alert messages to a Slack webhook URL. */
-export class SlackWebhookAlertOutput implements AlertOutput {
-    readonly name = "slack-webhook";
-    private url: string;
-
-    constructor(url: string) {
-        this.url = url;
-    }
-
-    async fire(alert: AlertState, rule: AlertRule): Promise<void> {
-        const emoji = rule.severity === "critical" ? ":fire:" :
-                      rule.severity === "warning"  ? ":warning:" : ":information_source:";
-
-        let text = `${emoji} *${rule.severity.toUpperCase()}: ${rule.name}*\n> ${rule.description}\n> Service: ${alert.service || "global"}`;
-        if (rule.metric && rule.operator && rule.threshold !== undefined) {
-            text += `\n> ${rule.metric} = ${alert.currentValue} (threshold: ${rule.operator} ${rule.threshold})`;
-        }
-        text += `\n> Timestamp: ${new Date().toISOString()}`;
-
-        try {
-            const res = await fetch(this.url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text }),
-                signal: AbortSignal.timeout(5_000),
-            });
-            if (!res.ok) {
-                log.error(`[Slack] Webhook failed: ${res.status} ${await res.text()}`);
-            }
-        } catch (err) {
-            log.error(`[Slack] Webhook unreachable: ${err instanceof Error ? err.message : String(err)}`);
-        }
-    }
-
-    async resolve(alert: AlertState, rule: AlertRule): Promise<void> {
-        const text = [
-            `:white_check_mark: *RESOLVED: ${rule.name}*`,
-            `> Service: ${alert.service || "global"}`,
-            `> Timestamp: ${new Date().toISOString()}`,
-        ].join("\n");
-
-        try {
-            await fetch(this.url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text }),
-                signal: AbortSignal.timeout(5_000),
-            });
-        } catch (err) {
-            log.error(`[Slack] Webhook delivery failed: ${err instanceof Error ? err.message : String(err)}`);
-        }
-    }
-}
-
-
-
-// --- Topology Provider Type -------------------------------------------------
 
 export interface TopologySnapshot {
     edges: {
@@ -251,10 +199,6 @@ export interface TopologySnapshot {
     }[];
     drops: { standard: number; critical: number };
 }
-
-
-
-// --- Alert Engine -----------------------------------------------------------
 
 export class AlertEngine {
     private rules: AlertRule[];
@@ -584,7 +528,7 @@ export class AlertEngine {
     }
 
     private async notifyResolve(state: AlertState, rule: AlertRule): Promise<void> {
-        log.info(`[✅ Alerting] RESOLVED: ${rule.name}${state.service ? ` on ${state.service}` : ""}`);
+        log.info(`[Alerting] RESOLVED: ${rule.name}${state.service ? ` on ${state.service}` : ""}`);
 
         for (const output of this.outputs) {
             try {
@@ -610,10 +554,6 @@ export class AlertEngine {
         }
     }
 }
-
-
-
-// --- Default Alert Rules ----------------------------------------------------
 
 /** Sensible default alerts that ship with aacyn. Users customize in aacyn.toml. */
 export const DEFAULT_ALERT_RULES: AlertRule[] = [

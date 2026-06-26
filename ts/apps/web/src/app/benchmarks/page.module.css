@@ -1,0 +1,36 @@
+.page { min-height: 100vh; background: #050510; color: #e2e8f0; }
+
+.hero { text-align: center; padding: 4rem 2rem 2rem; }
+.title { font-size: 2.2rem; font-weight: 700; color: #f1f5f9; margin: 0 0 0.5rem; }
+.sub { font-size: 1rem; color: #94a3b8; margin: 0; max-width: 560px; margin-inline: auto; line-height: 1.5; }
+
+.section { max-width: 700px; margin: 0 auto; padding: 2rem; }
+.sectionTitle { font-size: 1.2rem; font-weight: 700; color: #e2e8f0; margin: 0 0 0.25rem; }
+.sectionSub { font-size: 0.85rem; color: #64748b; margin: 0 0 1rem; }
+
+.table { background: rgba(15,23,42,0.6); border: 1px solid rgba(51,65,85,0.5); border-radius: 0.5rem; overflow: hidden; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 1rem;
+  border-bottom: 1px solid rgba(51,65,85,0.2); font-size: 0.85rem; }
+.row:last-child { border-bottom: none; }
+.header { font-weight: 700; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+  background: rgba(30,41,59,0.5); }
+.label { color: #94a3b8; font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace; }
+.value { color: #a5b4fc; font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+  font-weight: 600; text-align: right; }
+
+.cta { max-width: 700px; margin: 2rem auto; padding: 2rem; text-align: center; border-top: 1px solid rgba(51,65,85,0.3); }
+.ctaLinks { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; }
+
+.btnSecondary {
+  display: inline-block; padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600;
+  color: #94a3b8; border: 1px solid rgba(71,85,105,0.4); border-radius: 0.5rem;
+  text-decoration: none; transition: border-color 0.15s, color 0.15s;
+}
+.btnSecondary:hover { border-color: #6366f1; color: #c7d2fe; }
+
+.footer { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 2rem;
+  border-top: 1px solid rgba(51,65,85,0.3); max-width: 700px; margin: 0 auto; }
+.footerBrand { font-size: 0.9rem; font-weight: 700; color: #818cf8; }
+.footerLinks { display: flex; gap: 1.5rem; }
+.footerLinks a { font-size: 0.8rem; color: #64748b; text-decoration: none; }
+.footerLinks a:hover { color: #94a3b8; }

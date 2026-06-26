@@ -3,6 +3,7 @@ export type { TopologyEdge, GoldenSignal } from "./TopologyGraph";
 export { GoldenSignals, COLLECTING_DATA_MSG, NO_SERVICES_YET_MSG } from "./GoldenSignals";
 export type { GoldenSignalData } from "./GoldenSignals";
 export { EvidenceFeed, WAITING_FOR_KERNEL_EVENTS_MSG } from "./EvidenceFeed";
+export { SloGauge, SLO_LOADING_MSG, SLO_EMPTY_MSG } from "./SloGauge";
 export { createTopologyRenderer } from "./topology-renderer";
 export type { TopologyRenderer, RenderNode, RenderEdge } from "./topology-renderer";
 export { TraceWaterfall, NO_TRACE_FOUND_MSG, LOADING_TRACE_MSG } from "./TraceWaterfall";

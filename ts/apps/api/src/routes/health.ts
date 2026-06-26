@@ -47,7 +47,7 @@ function setEbpfStatus(response: DeepHealthResponse, store: IStore): void {
     response.ebpfDrops = drops;
     if (drops.standard > 0 || drops.critical > 0) {
         log.warn(
-            `[🔬 eBPF] Ring buffer drops detected — standard: ${drops.standard}, critical: ${drops.critical}`
+            `[ebpf] Ring buffer drops detected — standard: ${drops.standard}, critical: ${drops.critical}`
         );
     }
 }

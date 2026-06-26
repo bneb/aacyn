@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState, type MutableRefObject, type RefObject } from "react";
 import { createTopologyRenderer, type TopologyRenderer, type RenderEdge } from "./topology-renderer";
 
-// ── Exported empty-state messages (testable constants) ──────────────
+// Exported empty-state messages (testable constants) ──────────────
 
 export const EBPF_UNAVAILABLE_MSG =
     "eBPF not available — aacyn requires a Linux kernel ≥ 5.15 with BPF filesystem mounted. Running on macOS? Deploy via Docker or Helm to see live topology.";
@@ -14,7 +14,7 @@ export const NO_SERVICES_DISCOVERED_MSG =
 export const NO_EDGES_OBSERVED_MSG =
     "No edges observed — waiting for TCP connections. Deploy some services or generate traffic to see topology edges appear.";
 
-// ── Types ────────────────────────────────────────────────────────────
+// Types ────────────────────────────────────────────────────────────
 
 export interface TopologyEdge {
     source: string;
@@ -35,6 +35,11 @@ interface DashboardData {
     golden_signals: GoldenSignal[];
     uptime_seconds: number;
     source: string;
+    performance?: {
+        events_per_sec: number;
+        scan_latency_us: number;
+        simd: "AVX-512" | "NEON" | "scalar";
+    };
 }
 
 export interface GoldenSignal {
@@ -62,7 +67,7 @@ interface Props {
     pollInterval?: number;
 }
 
-// ── Custom hooks ─────────────────────────────────────────────────────
+// Custom hooks ─────────────────────────────────────────────────────
 
 function useAnimationLoop(
     canvasRef: RefObject<HTMLCanvasElement | null>,
@@ -117,7 +122,7 @@ function useWebGpuDetection() {
 
     useEffect(() => {
         if (typeof navigator !== "undefined" && "gpu" in navigator) {
-            navigator.gpu.requestAdapter().then(
+            (navigator as Navigator & { gpu: { requestAdapter(): Promise<unknown> } }).gpu.requestAdapter().then(
                 (adapter: unknown) => setAvailable(adapter !== null),
                 () => setAvailable(false),
             );
@@ -157,7 +162,7 @@ function useTopologyData(dataUrl: string, pollInterval: number) {
     return { data, error, consecutiveFailures };
 }
 
-// ── Sub-components ───────────────────────────────────────────────────
+// Sub-components ───────────────────────────────────────────────────
 
 function WebGpuBanner({ webGpuAvailable }: { webGpuAvailable: boolean | null }) {
     if (webGpuAvailable !== false) return null;
@@ -177,7 +182,7 @@ function RetransmitBadge({ edges }: { edges: TopologyEdge[] }) {
     return <span className={className}>⚡ {rate}% retransmit</span>;
 }
 
-// ── Render helpers ───────────────────────────────────────────────────
+// Render helpers ───────────────────────────────────────────────────
 
 function renderEbpfUnavailable() {
     return (
@@ -217,6 +222,33 @@ function renderNoEdgesObserved() {
     );
 }
 
+function StatsBar({ data }: { data: DashboardData }) {
+    return (
+        <div className="absolute top-2 left-4 z-10 flex gap-4 text-xs font-mono text-slate-400 bg-slate-950/70 px-3 py-1.5 rounded">
+            <span>{data.edges.length} edges</span>
+            <span>{data.golden_signals.length} services</span>
+            <span className="text-green-400">{data.total_ebpf_events.toLocaleString()} events</span>
+            {data.performance && (
+                <>
+                    <span className="text-cyan-400">
+                        {data.performance.events_per_sec.toLocaleString()} eps
+                    </span>
+                    <span className="text-blue-400">
+                        {data.performance.scan_latency_us}μs scan
+                    </span>
+                    <span className="text-purple-400">
+                        {data.performance.simd}
+                    </span>
+                </>
+            )}
+            <RetransmitBadge edges={data.edges} />
+            {data.drops.standard > 0 && (
+                <span className="text-yellow-400">⚠ {data.drops.standard} drops</span>
+            )}
+        </div>
+    );
+}
+
 function renderTopologyGraph(
     data: DashboardData,
     webGpuAvailable: boolean | null,
@@ -226,15 +258,7 @@ function renderTopologyGraph(
     return (
         <div ref={containerRef} className="relative w-full h-full min-h-[400px] bg-[#050510] rounded-lg border border-indigo-500/10">
             <WebGpuBanner webGpuAvailable={webGpuAvailable} />
-            <div className="absolute top-2 left-4 z-10 flex gap-4 text-xs font-mono text-slate-400 bg-slate-950/70 px-3 py-1.5 rounded">
-                <span>{data.edges.length} edges</span>
-                <span>{data.golden_signals.length} services</span>
-                <span className="text-green-400">{data.total_ebpf_events.toLocaleString()} events</span>
-                <RetransmitBadge edges={data.edges} />
-                {data.drops.standard > 0 && (
-                    <span className="text-yellow-400">⚠ {data.drops.standard} drops</span>
-                )}
-            </div>
+            <StatsBar data={data} />
             <canvas
                 ref={canvasRef}
                 className="w-full h-full min-h-[400px]"
@@ -272,7 +296,7 @@ export function TopologyGraph({ dataUrl = "/v1/dashboard/data", pollInterval = 5
     useAnimationLoop(canvasRef, rendererRef);
     useDataFeeder(data, rendererRef);
 
-    // ── Empty / error states ────────────────────────────────────────
+    // Empty / error states ────────────────────────────────────────
 
     if (error && data === null) {
         return renderError(error);

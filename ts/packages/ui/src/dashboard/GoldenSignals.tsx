@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 
-// ── Types ──────────────────────────────────────────────────────────
+// Types ──────────────────────────────────────────────────────────
 
 export interface GoldenSignalData {
     service: string;
@@ -25,9 +25,11 @@ export interface GoldenSignalData {
 interface Props {
     services: GoldenSignalData[];
     loading?: boolean;
+    /** Called when a user clicks a service row — navigate to trace waterfall. */
+    onServiceClick?: (service: string) => void;
 }
 
-// ── Exported constants (tested by empty-states.test.tsx) ────────────
+// Exported constants (tested by empty-states.test.tsx) ────────────
 
 export const COLLECTING_DATA_MSG =
     "Collecting data — golden signals (rate, errors, latency) appear after 30 seconds of eBPF observation. The engine needs enough TCP events to compute statistically meaningful aggregates.";
@@ -35,7 +37,7 @@ export const COLLECTING_DATA_MSG =
 export const NO_SERVICES_YET_MSG =
     "No services discovered yet. Deploy eBPF probes to see signals.";
 
-// ── Sort configuration ────────────────────────────────────────────
+// Sort configuration ────────────────────────────────────────────
 
 type SortKey = "error_pct" | "p99_ms" | "rate_rps" | "name";
 
@@ -49,7 +51,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 const WARN_THRESHOLD = 1;
 const CRIT_THRESHOLD = 5;
 
-// ── Helpers ────────────────────────────────────────────────────────
+// Helpers ────────────────────────────────────────────────────────
 
 function errorColorClass(pct: number): string {
     if (pct >= CRIT_THRESHOLD) return "text-red-400";
@@ -61,6 +63,12 @@ function errorBorderClass(pct: number): string {
     if (pct >= CRIT_THRESHOLD) return "border-red-800/60";
     if (pct >= WARN_THRESHOLD) return "border-yellow-800/50";
     return "border-transparent";
+}
+
+function errorBgClass(pct: number): string {
+    if (pct >= CRIT_THRESHOLD) return "bg-red-950/20";
+    if (pct >= WARN_THRESHOLD) return "bg-yellow-950/10";
+    return "";
 }
 
 function parseSortKey(v: string): SortKey {
@@ -95,7 +103,7 @@ function getComparator(sortBy: SortKey): (a: GoldenSignalData, b: GoldenSignalDa
     }
 }
 
-// ── Sparkline (SVG polyline mini-chart) ───────────────────────────
+// Sparkline (SVG polyline mini-chart) ───────────────────────────
 
 function Sparkline({ data, className = "" }: { data: number[]; className?: string }) {
     if (data.length < 2) return null;
@@ -118,7 +126,7 @@ function Sparkline({ data, className = "" }: { data: number[]; className?: strin
     );
 }
 
-// ── HTTP Status Breakdown (stacked bar) ──────────────────────────
+// HTTP Status Breakdown (stacked bar) ──────────────────────────
 
 function HttpBreakdownBar({ http2xx, http3xx, http4xx, http5xx }: {
     http2xx: number; http3xx: number; http4xx: number; http5xx: number;
@@ -139,7 +147,7 @@ function HttpBreakdownBar({ http2xx, http3xx, http4xx, http5xx }: {
     );
 }
 
-// ── Search + Sort Filter Bar ─────────────────────────────────────
+// Search + Sort Filter Bar ─────────────────────────────────────
 
 function FilterBar({ search, onSearchChange, sortBy, onSortChange }: {
     search: string; onSearchChange: (v: string) => void;
@@ -160,7 +168,7 @@ function FilterBar({ search, onSearchChange, sortBy, onSortChange }: {
     );
 }
 
-// ── Loading skeleton ─────────────────────────────────────────────
+// Loading skeleton ─────────────────────────────────────────────
 
 function LoadingSkeleton() {
     return (
@@ -181,7 +189,7 @@ function LoadingSkeleton() {
     );
 }
 
-// ── Empty state ──────────────────────────────────────────────────
+// Empty state ──────────────────────────────────────────────────
 
 function EmptyState() {
     return (
@@ -194,7 +202,7 @@ function EmptyState() {
     );
 }
 
-// ── Signal Row ───────────────────────────────────────────────────
+// Signal Row ───────────────────────────────────────────────────
 
 function LatencyCell({ sig }: { sig: GoldenSignalData }) {
     return (
@@ -205,19 +213,26 @@ function LatencyCell({ sig }: { sig: GoldenSignalData }) {
     );
 }
 
-function SignalRow({ sig }: { sig: GoldenSignalData }) {
+function ServiceButton({ service, onClick }: { service: string; onClick?: () => void }) {
+    return (
+        <button type="button" onClick={onClick} disabled={!onClick}
+            className="font-mono text-slate-300 text-sm w-28 truncate shrink-0 text-left hover:text-indigo-300 hover:underline disabled:hover:text-slate-300 disabled:hover:no-underline disabled:cursor-default transition-colors"
+            title={onClick ? `View traces for ${service}` : service}>
+            {service}
+        </button>
+    );
+}
+
+function SignalRow({ sig, onClick }: { sig: GoldenSignalData; onClick?: () => void }) {
     const ec = errorBorderClass(sig.error_pct);
     const sc = errorColorClass(sig.error_pct);
+    const bg = errorBgClass(sig.error_pct);
     const hasSparkline = sig.sparkline !== undefined && sig.sparkline.length >= 2;
     const hasHttp = sig.http_2xx !== undefined;
     return (
-        <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5 rounded border ${ec}`}>
-            <span className="font-mono text-slate-300 text-sm w-28 truncate shrink-0" title={sig.service}>
-                {sig.service}
-            </span>
-            {hasSparkline && <span className="hidden sm:inline-block">
-                <Sparkline data={sig.sparkline} className="text-indigo-400" />
-            </span>}
+        <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1.5 rounded border ${ec} ${bg}`}>
+            <ServiceButton service={sig.service} onClick={onClick} />
+            {hasSparkline && sig.sparkline && <Sparkline data={sig.sparkline} className="hidden sm:inline-block text-indigo-400" />}
             <span className={`font-mono tabular-nums text-xs w-14 text-right shrink-0 ${sc}`}>
                 {sig.error_pct.toFixed(1)}%
             </span>
@@ -225,17 +240,50 @@ function SignalRow({ sig }: { sig: GoldenSignalData }) {
             <span className="font-mono tabular-nums text-xs text-slate-500 w-16 text-right shrink-0">
                 {sig.rate_rps.toFixed(1)}/s
             </span>
-            {hasHttp && <span className="hidden sm:inline-block shrink-0 min-w-0">
+            {hasHttp && sig.http_2xx !== undefined && (
                 <HttpBreakdownBar http2xx={sig.http_2xx} http3xx={sig.http_3xx ?? 0}
                     http4xx={sig.http_4xx ?? 0} http5xx={sig.http_5xx ?? 0} />
-            </span>}
+            )}
         </div>
     );
 }
 
-// ── Main Component ───────────────────────────────────────────────
+// Column Headers ────────────────────────────────────────────────
 
-export function GoldenSignals({ services, loading }: Props) {
+function ColumnHeaders() {
+    return (
+        <div className="flex items-center gap-x-3 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-slate-600 border-b border-slate-800 mb-1">
+            <span className="w-28 shrink-0">Service</span>
+            <span className="hidden sm:inline-block w-[100px] shrink-0">Trend</span>
+            <span className="w-14 text-right shrink-0">Error%</span>
+            <span className="shrink-0 whitespace-nowrap">Latency</span>
+            <span className="w-16 text-right shrink-0">Rate/s</span>
+            <span className="hidden sm:inline-block shrink-0">HTTP</span>
+        </div>
+    );
+}
+
+// Signal List ──────────────────────────────────────────────────
+
+function SignalList({ signals, onServiceClick }: {
+    signals: GoldenSignalData[]; onServiceClick?: (service: string) => void;
+}) {
+    return (
+        <>
+            <ColumnHeaders />
+            <div className="space-y-0.5">
+                {signals.map(sig => (
+                    <SignalRow key={sig.service} sig={sig}
+                        onClick={onServiceClick ? () => onServiceClick(sig.service) : undefined} />
+                ))}
+            </div>
+        </>
+    );
+}
+
+// Main Component ───────────────────────────────────────────────
+
+export function GoldenSignals({ services, loading, onServiceClick }: Props) {
     const [sortBy, setSortBy] = useState<SortKey>("error_pct");
     const [search, setSearch] = useState("");
     const filtered = useMemo(() => {
@@ -255,9 +303,7 @@ export function GoldenSignals({ services, loading }: Props) {
             {filtered.length === 0 ? (
                 <p className="text-sm text-slate-600">No services match &quot;{search}&quot;</p>
             ) : (
-                <div className="space-y-0.5">
-                    {filtered.map(sig => <SignalRow key={sig.service} sig={sig} />)}
-                </div>
+                <SignalList signals={filtered} onServiceClick={onServiceClick} />
             )}
         </div>
     );

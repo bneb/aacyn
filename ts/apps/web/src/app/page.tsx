@@ -41,7 +41,7 @@ export default function LandingPage() {
         </p>
         <div className={styles.explainer__grid}>
           <div className={styles.explainer__card}>
-            <span className={styles.explainer__icon}>🔍</span>
+            <span className={styles.explainer__icon}>1</span>
             <h3>Monitor</h3>
             <p>
               See every request, error, and slow response across your services.
@@ -50,7 +50,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className={styles.explainer__card}>
-            <span className={styles.explainer__icon}>🏠</span>
+            <span className={styles.explainer__icon}>2</span>
             <h3>Self-hosted</h3>
             <p>
               Runs on your hardware — a mini PC, a server rack, or a Docker
@@ -59,7 +59,7 @@ export default function LandingPage() {
             </p>
           </div>
           <div className={styles.explainer__card}>
-            <span className={styles.explainer__icon}>💸</span>
+            <span className={styles.explainer__icon}>3</span>
             <h3>Free and open source</h3>
             <p>
               No per-host fees. No per-GB surcharges. No surprise invoices.
@@ -88,33 +88,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Docker Demo (the killer section) ──────────────────────────── */}
+      {/* ── Helm Install ──────────────────────────────────────────────── */}
       <section className={styles.demo}>
         <div className={styles.demo__text}>
           <h2 className={styles.section__heading}>
-            See inside your Docker stack in 30 seconds
+            Deploy in 30 seconds with Helm
           </h2>
           <p className={styles.section__desc}>
-            Add one service to your docker-compose. The dashboard lights up
-            automatically — every connection between your containers appears
-            without touching a single line of application code.
+            One command installs the eBPF probes on every node and the dashboard
+            aggregator. Works alongside any CNI — no migration needed.
           </p>
           <div className={styles.integrate__code}>
             <div className={styles.code__header}>
               <span className={styles.code__dot} />
               <span className={styles.code__dot} />
               <span className={styles.code__dot} />
-              <span className={styles.code__filename}>docker-compose.yml</span>
+              <span className={styles.code__filename}>terminal</span>
             </div>
-            <pre className={styles.code__body}>{`services:
-  # ... your existing services ...
-
-  aacyn:
-    image: ghcr.io/aacyn/sidecar:latest
-    privileged: true
-    pid: host
-    ports:
-      - "3001:3001"  # Dashboard`}</pre>
+            <pre className={styles.code__body}>{`helm repo add aacyn https://charts.aacyn.com
+helm install aacyn aacyn/aacyn \\
+  --namespace aacyn --create-namespace`}</pre>
           </div>
         </div>
         <div className={styles.demo__screenshot}>
@@ -124,8 +117,8 @@ export default function LandingPage() {
             className={styles.demo__img}
           />
           <p className={styles.demo__caption}>
-            Real dashboard output — nginx → node → postgres topology discovered
-            automatically via eBPF.
+            Dashboard lights up automatically — services, edges, and golden signals
+            discovered via eBPF with zero application code changes.
           </p>
         </div>
       </section>
@@ -184,8 +177,8 @@ export default function LandingPage() {
           </h2>
           <p className={styles.section__desc}>
             aacyn runs on your hardware and stores everything locally. There is no
-            cloud backend. The only outbound request is a daily license check — a
-            200-byte ping that contains no telemetry data.
+            cloud backend, no telemetry, and no phoning home. Your data stays
+            on your machines.
           </p>
         </div>
       </section>
