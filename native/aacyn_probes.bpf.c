@@ -37,32 +37,36 @@ typedef _Bool bool;
 #endif
 
 /* ── Kernel types not in vmlinux.h ───────────────────────────────────────── */
-/* vmlinux.h is hand-crafted and may not include every kernel type used      */
-/* by the probes. These structs are stable kernel ABI — field offsets are    */
-/* resolved at load time via CO-RE relocations, so the definitions here are  */
-/* minimal: only the fields accessed by our probes need to be present.       */
+/* vmlinux.h may not include every kernel type. These are stable kernel ABI  */
+/* structs — field offsets resolved at load time via CO-RE relocations.      */
+/* Guard against redefinition when vmlinux.h already provides the type.      */
 
-#ifndef __AACYN_IOVEC_DEFINED
-#define __AACYN_IOVEC_DEFINED
+#ifndef __kernel_size_t
+typedef __kernel_long_t __kernel_size_t;
+#endif
+
+#ifndef BPF_MAP_TYPE_PERCPU_ARRAY
+#define BPF_MAP_TYPE_PERCPU_ARRAY 11
+#endif
+
+#ifndef struct iovec
 struct iovec {
 	void *iov_base;
 	__kernel_size_t iov_len;
 };
 #endif
 
-#ifndef __AACYN_MSGITER_DEFINED
-#define __AACYN_MSGITER_DEFINED
+#ifndef struct msg_iter
 struct msg_iter {
 	struct iovec *__iov;
 };
 #endif
 
-#ifndef __AACYN_MSGHDR_DEFINED
-#define __AACYN_MSGHDR_DEFINED
-struct msghdr {
+/* aacyn accessor: minimal msg fields used by probes. Use a prefix to avoid
+   collision with the full struct msghdr in vmlinux.h (if present). */
+struct aacyn_msghdr {
 	struct msg_iter msg_iter;
 };
-#endif
 
 /* ─── Shared Event Structure ─────────────────────────────────────────────── */
 /* Must match the struct in libaacyn.c for zero-copy ring buffer transfer.   */
@@ -546,7 +550,7 @@ int trace_tcp_recvmsg(struct pt_regs *ctx) {
 
   /* arg1 = struct sock *sk, arg2 = struct msghdr *msg */
   struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
-  struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
+  struct aacyn_msghdr *msg = (struct aacyn_msghdr *)PT_REGS_PARM2(ctx);
 
   if (!sk || !msg)
     return 0;

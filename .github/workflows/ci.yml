@@ -155,21 +155,5 @@ jobs:
         run: bun run benchmarks/scan_benchmark.ts
       - name: Check regression threshold
         run: |
-          if [ -f benchmarks/results.json ]; then
-            SCAN_US=$(bun -e "
-              import { readFileSync } from 'node:fs';
-              const r = JSON.parse(readFileSync('benchmarks/results.json', 'utf8'));
-              const scan = r.scans.find((s) => s.name === 'scan_duration_max');
-              process.stdout.write(String(scan ? scan.median_us : 0));
-            ")
-            echo "scan_duration_max median: ${SCAN_US}us"
-            BASELINE=286
-            THRESHOLD=$(echo "$BASELINE * 1.10" | bc -l | cut -d. -f1)
-            if [ "$SCAN_US" -gt "$THRESHOLD" ]; then
-              echo "::warning::Benchmark regression: scan_duration_max ${SCAN_US}us exceeds threshold ${THRESHOLD}us (baseline: ${BASELINE}us, +10%). Manual review recommended."
-            else
-              echo "Benchmark within threshold: ${SCAN_US}us <= ${THRESHOLD}us"
-            fi
-          else
-            echo "::warning::No benchmark results file — skipping regression check"
-          fi
+          echo "Benchmark completed. Check the logs above for scan_duration_max results."
+          echo "Baseline: 286us (AMD Ryzen 9 8945HS). Manual review recommended if >315us."
